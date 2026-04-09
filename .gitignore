@@ -214,3 +214,4 @@ CLAUDE.local.md
 models/checkpoints/
 *.pt
 *.pth
+data/UseCase2/3w_dataset/

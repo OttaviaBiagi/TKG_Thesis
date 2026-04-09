@@ -1,0 +1,127 @@
+{
+  "causal_chains": [
+    {
+      "chain_id": "CC-01",
+      "description": "PO-003 late delivery caused A012 delay",
+      "chain": [
+        {
+          "entity": "PO-003",
+          "relation": "deliveredLate",
+          "timestamp": "2024-02-28"
+        },
+        {
+          "entity": "DN-001",
+          "relation": "triggeredDelayIn",
+          "timestamp": "2024-02-28"
+        },
+        {
+          "entity": "A012",
+          "relation": "startedLate",
+          "timestamp": "2024-03-12"
+        }
+      ],
+      "expected_tgql_query": "MATCH path WHERE PO-003 deliveredLate AND A012 startedLate WHEN (PO-003 deliveryInterval OVERLAPS A012 waitInterval)"
+    },
+    {
+      "chain_id": "CC-02",
+      "description": "NCR on PO-007 caused A023 delay",
+      "chain": [
+        {
+          "entity": "PO-007",
+          "relation": "hadNCR",
+          "timestamp": "2024-03-20"
+        },
+        {
+          "entity": "NCR-001",
+          "relation": "delayedActivity",
+          "timestamp": "2024-03-20"
+        },
+        {
+          "entity": "A023",
+          "relation": "startedLate",
+          "timestamp": "2024-03-29"
+        }
+      ]
+    },
+    {
+      "chain_id": "CC-03",
+      "description": "DOC-012 late approval blocked A031",
+      "chain": [
+        {
+          "entity": "DOC-012",
+          "relation": "approvedLate",
+          "timestamp": "2024-04-08"
+        },
+        {
+          "entity": "A031",
+          "relation": "blockedByDocument",
+          "timestamp": "2024-04-08"
+        },
+        {
+          "entity": "A031",
+          "relation": "startedLate",
+          "timestamp": "2024-04-16"
+        }
+      ]
+    },
+    {
+      "chain_id": "CC-04",
+      "description": "Change order CO-001 caused A038 delay, which cascaded to A044",
+      "chain": [
+        {
+          "entity": "CO-001",
+          "relation": "issuedAt",
+          "timestamp": "2024-04-15"
+        },
+        {
+          "entity": "A038",
+          "relation": "impactedByChange",
+          "timestamp": "2024-04-15"
+        },
+        {
+          "entity": "A038",
+          "relation": "startedLate",
+          "timestamp": "2024-04-25"
+        },
+        {
+          "entity": "A044",
+          "relation": "dependsOn_A038",
+          "timestamp": "2024-05-05"
+        }
+      ]
+    },
+    {
+      "chain_id": "CC-05",
+      "description": "NCR-002 and PO-014 delay cascaded to A057 and A060",
+      "chain": [
+        {
+          "entity": "NCR-002",
+          "relation": "issuedAt",
+          "timestamp": "2024-07-10"
+        },
+        {
+          "entity": "A057",
+          "relation": "delayedByNCR",
+          "timestamp": "2024-07-10"
+        },
+        {
+          "entity": "A060",
+          "relation": "dependsOn_A057",
+          "timestamp": "2024-07-22"
+        },
+        {
+          "entity": "A060",
+          "relation": "cascade_delay",
+          "timestamp": "2024-07-22"
+        }
+      ]
+    }
+  ],
+  "evaluation_questions": [
+    "Which activities were delayed while their linked purchase order was in late delivery status?",
+    "Which activities started late immediately after a change order was issued?",
+    "Find all multi-hop delay chains of length >= 2 between events and activities.",
+    "Which work packages had both a document approval delay AND a procurement delay in the same time window?",
+    "What was the planned vs actual schedule state of WP04 on 2024-05-01?"
+  ]
+}
