@@ -1,0 +1,45 @@
+{
+  "dataset": "3W Dataset (Petrobras)",
+  "source": "Vargas et al. (2019), JPSE",
+  "n_event_types": 8,
+  "n_sensors": 8,
+  "sensors": [
+    "P-PDG",
+    "P-TPT",
+    "T-TPT",
+    "P-MON-CKP",
+    "T-JUS-CKP",
+    "P-JUS-CKGL",
+    "T-JUS-CKGL",
+    "QGL"
+  ],
+  "sampling_rate_hz": 1,
+  "event_types": {
+    "0": "Normal",
+    "1": "Abrupt Increase of BSW",
+    "2": "Spurious Closure of DHSV",
+    "3": "Severe Slugging",
+    "4": "Flow Instability",
+    "5": "Rapid Productivity Loss",
+    "6": "Quick Restriction in PCK",
+    "7": "Scaling in PCK",
+    "8": "Hydrate in Production Line",
+    "9": "Undefined/Other"
+  },
+  "event_windows": {
+    "1": "12h",
+    "2": "5-20 min",
+    "3": "5h",
+    "4": "15 min",
+    "5": "12h",
+    "6": "15 min",
+    "7": "72h",
+    "8": "30min-5h"
+  },
+  "design_decisions": {
+    "nan_handling": "graph_neighbor_inference",
+    "precedes_relation": true,
+    "causally_coupled": true,
+    "simultaneity": "not_in_dataset_future_work"
+  }
+}
