@@ -86,6 +86,9 @@ def load(session, dataset):
     # Steps (batch)
     BATCH = 200
     steps = tx['steps']
+    for s in steps:
+        if s.get('weight_pct') != s.get('weight_pct'):  # NaN check
+            s['weight_pct'] = 0.0
     for i in range(0, len(steps), BATCH):
         batch = steps[i:i+BATCH]
         session.run('''
