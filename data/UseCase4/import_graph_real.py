@@ -1,5 +1,5 @@
 """
-UseCase3 — Import EPC TKG into Neo4j
+UseCase4 — Import EPC TKG into Neo4j
 Reads epc_dataset_real.json and loads all nodes + relations
 """
 import json
@@ -68,7 +68,8 @@ def load(session, dataset):
             cert_id = cert_name.replace(' ', '_')
             session.run('''
                 MATCH (wp:WorkPermit {id:$pid}), (c:Certification {id:$cid})
-                MERGE (wp)-[r:REQUIRES_CERT {valid_from:$vf, valid_to:null, tx_time:$tx}]->(c)
+                MERGE (wp)-[r:REQUIRES_CERT]->(c)
+                SET r.valid_from=$vf, r.valid_to=null, r.tx_time=$tx
             ''', pid=permit_id, cid=cert_id,
                  vf=PROJECT_START.isoformat(),
                  tx=datetime.now(timezone.utc).isoformat())
@@ -76,7 +77,8 @@ def load(session, dataset):
     # Update event: new cert for hot_work after month 6
     session.run('''
         MATCH (wp:WorkPermit {id:'hot_work'}), (c:Certification {id:'Advanced_Fire_Watch'})
-        MERGE (wp)-[r:REQUIRES_CERT {valid_from:$vf, valid_to:null, tx_time:$tx}]->(c)
+        MERGE (wp)-[r:REQUIRES_CERT]->(c)
+        SET r.valid_from=$vf, r.valid_to=null, r.tx_time=$tx
     ''', vf=RULE_CHANGE.isoformat(),
          tx=datetime.now(timezone.utc).isoformat())
     print("✅ Permit→Cert relations + bitemporal rule change")
@@ -129,4 +131,4 @@ if __name__ == '__main__':
     with driver.session() as session:
         load(session, dataset)
     driver.close()
-    print("\n🎉 UseCase3 TKG loaded into Neo4j!")
+    print("\n🎉 UseCase4 TKG loaded into Neo4j!")
