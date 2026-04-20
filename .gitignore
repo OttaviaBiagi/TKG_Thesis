@@ -215,3 +215,7 @@ models/checkpoints/
 *.pt
 *.pth
 data/UseCase2/3w_dataset/
+
+data/UseCase4/Family_Steps_macro.xlsm
+
+data/UseCase4/epc_dataset_real.json
