@@ -127,23 +127,47 @@ def add_bitemporality(valid_from: datetime, duration_days: int = 30) -> dict:
     }
 
 # ─── Generate workers ─────────────────────────────────────────────────────────
+# First 10 workers have guaranteed cert sets to make bitemporal queries meaningful:
+#   W-001..W-006: qualified for hot_work BEFORE rule change (3 original certs)
+#   W-007..W-010: qualified AFTER rule change too (have Advanced Fire Watch as well)
+#   W-011..W-050: random certs as before
+GUARANTEED_SETS = [
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
+]
+
 def generate_workers(all_certs: set, n: int = 50) -> list:
     workers = []
     cert_list = list(all_certs)
+    tx_now = datetime.now(timezone.utc)
+
     for i in range(n):
         discipline = random.choice(list(DISCIPLINE_TIMELINE.keys()))
-        n_certs = random.randint(1, 4)
-        certs = random.sample(cert_list, min(n_certs, len(cert_list)))
         cert_valid_from = PROJECT_START - timedelta(days=random.randint(30, 365))
+
+        if i < len(GUARANTEED_SETS):
+            certs = GUARANTEED_SETS[i]
+        else:
+            n_certs = random.randint(1, 4)
+            certs = random.sample(cert_list, min(n_certs, len(cert_list)))
+
         workers.append({
             'id':         f'W-{i+1:03d}',
             'name':       f'Worker_{i+1}',
             'discipline': discipline,
             'certifications': [{
                 'cert': c,
-                'valid_from': (cert_valid_from).isoformat(),
+                'valid_from': cert_valid_from.isoformat(),
                 'valid_to':   (cert_valid_from + timedelta(days=random.choice([365, 730, 1095]))).isoformat(),
-                'tx_time':    datetime.now(timezone.utc).isoformat(),
+                'tx_time':    tx_now.isoformat(),
             } for c in certs]
         })
     return workers
