@@ -127,21 +127,46 @@ def add_bitemporality(valid_from: datetime, duration_days: int = 30) -> dict:
     }
 
 # ─── Generate workers ─────────────────────────────────────────────────────────
-# First 10 workers have guaranteed cert sets to make bitemporal queries meaningful:
-#   W-001..W-006: qualified for hot_work BEFORE rule change (3 original certs)
-#   W-007..W-010: qualified AFTER rule change too (have Advanced Fire Watch as well)
-#   W-011..W-050: random certs as before
+# Guaranteed cert sets ensure every permit type has at least 2 qualified workers.
+# hot_work: W-001..W-006 qualified BEFORE rule change, W-007..W-010 AFTER too.
+# Other permit types: W-011..W-024 each hold the full cert set for one permit type.
+# W-025..W-050: random certs (realistic mixed workforce).
 GUARANTEED_SETS = [
+    # hot_work — before rule change (no Advanced Fire Watch)
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification'],
+    # hot_work — after rule change (with Advanced Fire Watch)
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
     ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch'],
+    # excavation (W-011..W-012)
+    ['Excavation Safety', 'Confined Space Entry', 'Soil Assessment'],
+    ['Excavation Safety', 'Confined Space Entry', 'Soil Assessment'],
+    # lifting (W-013..W-014)
+    ['Rigging & Lifting', 'Crane Operator', 'Slinging Certificate'],
+    ['Rigging & Lifting', 'Crane Operator', 'Slinging Certificate'],
+    # electrical (W-015..W-016)
+    ['Electrical Safety', 'LOTO Certification', 'HV Awareness'],
+    ['Electrical Safety', 'LOTO Certification', 'HV Awareness'],
+    # confined_space (W-017..W-018)
+    ['Confined Space Entry', 'Gas Testing', 'Emergency Response'],
+    ['Confined Space Entry', 'Gas Testing', 'Emergency Response'],
+    # radiography (W-019..W-020)
+    ['NDT Level II', 'Radiation Safety', 'RT Operator'],
+    ['NDT Level II', 'Radiation Safety', 'RT Operator'],
+    # work_at_height (W-021..W-022)
+    ['Working at Height', 'Scaffold Inspection', 'Fall Arrest'],
+    ['Working at Height', 'Scaffold Inspection', 'Fall Arrest'],
+    # multi-permit specialists (W-023..W-024)
+    ['Hot Work Safety', 'Fire Watch', 'Welding Certification', 'Advanced Fire Watch',
+     'Working at Height', 'Scaffold Inspection', 'Fall Arrest'],
+    ['Electrical Safety', 'LOTO Certification', 'HV Awareness',
+     'Confined Space Entry', 'Gas Testing', 'Emergency Response'],
 ]
 
 def generate_workers(all_certs: set, n: int = 50) -> list:

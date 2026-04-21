@@ -289,11 +289,20 @@ if __name__ == '__main__':
     n_violations = len(events['permit_denied'])
     n_total      = len(d['steps'])
 
+    # Violations breakdown by permit type (diagnostic)
+    from collections import Counter
+    viol_by_permit = Counter(e['permit_type'] for e in events['permit_denied'])
+    steps_by_permit = Counter(s['permit_type'] for s in d['steps'])
+
     print(f'\n📊 Simulation summary:')
     print(f'   Steps total:        {n_total}')
     print(f'   Steps delayed:      {n_delayed} ({n_delayed/n_total*100:.1f}%)')
     print(f'   PERMIT_DENIED:      {n_violations} ({n_violations/n_total*100:.1f}%)')
     print(f'   Avg delay:          {sum(delays.values())/len(delays):.1f} days')
+    print(f'\n   Violations by permit type:')
+    for pt, total in sorted(steps_by_permit.items(), key=lambda x: -x[1]):
+        v = viol_by_permit.get(pt, 0)
+        print(f'     {pt:<20} {v:>4} / {total:>4}  ({v/total*100:.1f}%)')
 
     with open(OUTPUT_FILE, 'w') as f:
         json.dump(events, f, indent=2)
