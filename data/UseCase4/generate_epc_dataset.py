@@ -173,25 +173,30 @@ def generate_workers(all_certs: set, n: int = 50) -> list:
     workers = []
     cert_list = list(all_certs)
     tx_now = datetime.now(timezone.utc)
+    # guaranteed workers get project-spanning validity (covers all 18 months + buffer)
+    GUARANTEED_VALID_FROM = PROJECT_START - timedelta(days=90)
+    GUARANTEED_VALID_TO   = PROJECT_START + timedelta(days=3 * 365)
 
     for i in range(n):
         discipline = random.choice(list(DISCIPLINE_TIMELINE.keys()))
-        cert_valid_from = PROJECT_START - timedelta(days=random.randint(30, 365))
 
         if i < len(GUARANTEED_SETS):
             certs = GUARANTEED_SETS[i]
+            cert_valid_from = GUARANTEED_VALID_FROM
+            cert_valid_to   = GUARANTEED_VALID_TO
         else:
-            n_certs = random.randint(1, 4)
-            certs = random.sample(cert_list, min(n_certs, len(cert_list)))
+            certs = random.sample(cert_list, min(random.randint(1, 4), len(cert_list)))
+            cert_valid_from = PROJECT_START - timedelta(days=random.randint(30, 365))
+            cert_valid_to   = cert_valid_from + timedelta(days=random.choice([365, 730, 1095]))
 
         workers.append({
             'id':         f'W-{i+1:03d}',
             'name':       f'Worker_{i+1}',
             'discipline': discipline,
             'certifications': [{
-                'cert': c,
+                'cert':       c,
                 'valid_from': cert_valid_from.isoformat(),
-                'valid_to':   (cert_valid_from + timedelta(days=random.choice([365, 730, 1095]))).isoformat(),
+                'valid_to':   cert_valid_to.isoformat(),
                 'tx_time':    tx_now.isoformat(),
             } for c in certs]
         })
