@@ -37,8 +37,10 @@ WHERE c.id IN old_reqs
 WITH w, collect(c.id) AS worker_certs, old_reqs
 WHERE all(rc IN old_reqs WHERE rc IN worker_certs)
 WITH collect(w.id) AS qualified_before
-MATCH (wp:WorkPermit {id:'hot_work'})-[r:REQUIRES_CERT]->(c:Certification)
-WITH collect(c.id) AS new_reqs, qualified_before
+MATCH (wp2:WorkPermit {id:'hot_work'})-[r2:REQUIRES_CERT]->(c2:Certification)
+WHERE r2.valid_from <= '2024-07-01T00:00:00+00:00'
+  AND (r2.valid_to IS NULL OR r2.valid_to > '2024-07-01T00:00:00+00:00')
+WITH collect(c2.id) AS new_reqs, qualified_before
 MATCH (w:Worker)-[h:HAS_CERT]->(c:Certification)
 WHERE w.id IN qualified_before
   AND c.id IN new_reqs

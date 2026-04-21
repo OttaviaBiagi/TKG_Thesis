@@ -1,7 +1,7 @@
 // UseCase4 — Critical Path & Bottleneck Queries on EPC TKG
 
-// ── Q5: Critical path (longest chain in PRECEDES) ─────────────────────────────
-MATCH path = (start:Step)-[:PRECEDES*]->(end:Step)
+// ── Q5: Critical path (longest chain in PRECEDES, max depth 30) ───────────────
+MATCH path = (start:Step)-[:PRECEDES*..30]->(end:Step)
 WHERE NOT ()-[:PRECEDES]->(start)
   AND NOT (end)-[:PRECEDES]->()
 WITH path, length(path) AS depth
@@ -19,7 +19,7 @@ RETURN act.discipline AS discipline,
 ORDER BY discipline, n_steps DESC;
 
 // ── Q7: Most blocking steps (steps with most downstream dependencies) ──────────
-MATCH (s:Step)-[:PRECEDES*1..]->(downstream:Step)
+MATCH (s:Step)-[:PRECEDES*1..30]->(downstream:Step)
 WITH s, count(downstream) AS blocks
 ORDER BY blocks DESC
 LIMIT 10
@@ -27,7 +27,7 @@ MATCH (s)-[:REQUIRES_PERMIT]->(wp:WorkPermit)
 RETURN s.id, s.name, s.activity_id, wp.id AS permit, blocks;
 
 // ── Q8: Activities on critical path ───────────────────────────────────────────
-MATCH path = (start:Step)-[:PRECEDES*]->(end:Step)
+MATCH path = (start:Step)-[:PRECEDES*..30]->(end:Step)
 WHERE NOT ()-[:PRECEDES]->(start)
   AND NOT (end)-[:PRECEDES]->()
 WITH path, length(path) AS depth
