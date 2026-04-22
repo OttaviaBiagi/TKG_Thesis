@@ -1,0 +1,26 @@
+event_id,event_type,date,impacts_activity,description,triggers_delay_days,linked_po
+CO-001,ChangeOrder,2024-04-15,A038,Scope change: added piping loop,10,
+NCR-001,NCR,2024-03-20,A023,Material non-conformance on PO-007,9,PO-007
+NCR-002,NCR,2024-07-10,A057,Weld quality failure,12,
+WD-001,WeatherDelay,2024-05-02,A052,Storm: civil works suspended 7 days,7,
+DN-001,DelayNotice,2024-02-28,A012,Vendor notified 12-day delivery delay,12,PO-003
+DN-002,DelayNotice,2024-06-15,A044,Custom valve fabrication delay,14,PO-014
+INS-001,Inspection,2024-02-13,A043,Routine inspection checkpoint for A043,0,
+INS-002,Inspection,2024-02-04,A025,Routine inspection checkpoint for A025,0,
+INS-003,Inspection,2024-03-01,A049,Routine inspection checkpoint for A049,0,
+INS-004,Inspection,2024-02-03,A031,Routine inspection checkpoint for A031,0,
+INS-005,Inspection,2024-01-12,A010,Routine inspection checkpoint for A010,0,
+INS-006,Inspection,2024-03-01,A050,Routine inspection checkpoint for A050,0,
+INS-007,Inspection,2024-01-17,A021,Routine inspection checkpoint for A021,0,
+INS-008,Inspection,2024-02-24,A050,Routine inspection checkpoint for A050,0,
+INS-009,Inspection,2024-03-04,A049,Routine inspection checkpoint for A049,0,
+INS-010,Inspection,2024-01-30,A013,Routine inspection checkpoint for A013,0,
+INS-011,Inspection,2024-01-08,A008,Routine inspection checkpoint for A008,0,
+INS-012,Inspection,2024-01-29,A040,Routine inspection checkpoint for A040,0,
+INS-013,Inspection,2024-02-04,A048,Routine inspection checkpoint for A048,0,
+INS-014,Inspection,2024-01-11,A010,Routine inspection checkpoint for A010,0,
+INS-015,Inspection,2024-02-24,A047,Routine inspection checkpoint for A047,0,
+INS-016,Inspection,2024-01-09,A006,Routine inspection checkpoint for A006,0,
+INS-017,Inspection,2024-02-04,A037,Routine inspection checkpoint for A037,0,
+INS-018,Inspection,2024-02-13,A033,Routine inspection checkpoint for A033,0,
+INS-019,Inspection,2024-02-26,A046,Routine inspection checkpoint for A046,0,
