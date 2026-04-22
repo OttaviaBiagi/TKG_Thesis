@@ -39,7 +39,9 @@ TKG_Thesis/
 │       ├── 02_temporal_queries.ipynb    # Bitemporal compliance queries
 │       ├── 03_critical_path.ipynb       # Critical path & bottleneck analysis
 │       ├── 04_dynamic_tkg.ipynb         # Event stream analysis (ASSIGNED_TO, COMPLETED, PERMIT_DENIED)
-│       └── 05_tgn_epc.ipynb             # TGN training on EPC events (delay + violation prediction)
+│       ├── 05_tgn_epc.ipynb             # TGN training on EPC events (delay + violation prediction)
+│       ├── 06_tkg_models.ipynb          # TNTComplEx vs TGN cert-aware embedding models
+│       └── 07_four_layer_tlogic.ipynb   # Four-layer T-Logic symbolic rule mining + cascade risk
 │
 ├── experiments/
 │   ├── UseCase4/                        # Plots and outputs from UseCase4 notebooks
@@ -65,9 +67,18 @@ TKG_Thesis/
   - Bitemporal compliance: 8 workers qualified before rule change → 3 after (5 lost compliance)
   - Critical path: 18 steps (ME.CT — Cooling Tower Erection)
   - Main bottleneck: CI discipline (563 steps), BU.BR.AR blocks 57,341 downstream steps
-  - Dynamic events: ASSIGNED_TO, COMPLETED (with delay cascade), PERMIT_DENIED (~5% violation rate)
+  - Dynamic events: 1,518 ASSIGNED_TO, 18 PERMIT_DENIED (1.2% violation rate), delay cascade propagation
 - **Neo4j:** 1 Project, 276 Activities, 1,518 Steps, 8 WorkPermits, 33 Certifications, 50 Workers
-- **Next:** TGN on EPC event stream — predict delay_days and compliance violations
+- **ML Models (notebooks 05–07):**
+
+| Model | Type | Precision | Recall | F1 | Notebook |
+|-------|------|-----------|--------|----|----------|
+| TGN (event stream) | Neural GNN | — | — | — | 05 |
+| TNTComplEx | Embedding | 0.62 | 0.58 | 0.60 | 06 |
+| TGN Cert-Aware | Neural GNN | 0.71 | 0.65 | 0.68 | 06 |
+| **T-Logic R1+R2** | **Symbolic** | **0.58** | **1.00** | **0.735** | **07** |
+
+  T-Logic achieves **perfect recall** (0 missed violations) with full interpretability — critical for safety-critical EPC compliance. The 13 false positives correspond to workers missing certs who were not caught by the simulator's 5% human-error model, i.e., latent risks T-Logic correctly flags.
 
 #### What is real vs synthetic in UseCase4
 | Data | Source |
@@ -117,9 +128,9 @@ python3 data/UseCase4/simulate_events.py
 |---|---|---|
 | **Domain** | Oil well anomaly detection | EPC project compliance |
 | **Graph type** | Sensor TKG (dynamic) | Planning TKG (bitemporal) |
-| **ML approach** | TGN (temporal GNN) | Graph queries (Cypher) |
-| **Main result** | AUC-ROC 0.61 | 5 workers lost compliance after rule change |
-| **Limitation** | Class imbalance | Synthetic HSE data |
+| **ML approach** | TGN (temporal GNN) | TNTComplEx, TGN, T-Logic symbolic rules |
+| **Main result** | AUC-ROC 0.61 | T-Logic F1=0.735, Recall=1.0 (0 missed violations) |
+| **Limitation** | Class imbalance | Synthetic HSE/worker data |
 
 **Thesis contribution:** TKG as a unifying framework for heterogeneous industrial domains — both anomaly detection and compliance tracking benefit from the temporal graph structure.
 
@@ -128,4 +139,6 @@ python3 data/UseCase4/simulate_events.py
 ## References
 - Vargas et al. (2019) — 3W Dataset, Journal of Petroleum Science and Engineering
 - Rossi et al. (2020) — Temporal Graph Networks (TGN)
+- Lacroix et al. (2020) — Tensor Decompositions for Temporal Knowledge Bases (TNTComplEx)
+- Liu et al. (2022) — T-Logic: Temporal Logical Rules for Explainable Link Forecasting
 - TR Internal — Family_Steps_macro.xlsm (EPC planning data)
