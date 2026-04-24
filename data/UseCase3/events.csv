@@ -5,6 +5,7 @@ NCR-002,NCR,2024-07-10,A057,Weld quality failure,12,
 WD-001,WeatherDelay,2024-05-02,A052,Storm: civil works suspended 7 days,7,
 DN-001,DelayNotice,2024-02-28,A012,Vendor notified 12-day delivery delay,12,PO-003
 DN-002,DelayNotice,2024-06-15,A044,Custom valve fabrication delay,14,PO-014
+DN-003,DelayNotice,2024-07-22,A060,Cascade delay from A057 weld failure,12,
 INS-001,Inspection,2024-02-13,A043,Routine inspection checkpoint for A043,0,
 INS-002,Inspection,2024-02-04,A025,Routine inspection checkpoint for A025,0,
 INS-003,Inspection,2024-03-01,A049,Routine inspection checkpoint for A049,0,
