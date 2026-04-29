@@ -1,7 +1,7 @@
 # TKG_Thesis
 **Temporal Knowledge Graph Systems for Industrial Monitoring, Prediction, and Decision Support**
 
-MSc Thesis — Tecnicas Reunidas / Universidad Politécnica de Madrid  
+MSc Thesis — Tecnicas Reunidas / Universidad Politécnica de Madrid & Politecnico di Milano
 Author: Ottavia Biagi
 
 ---
