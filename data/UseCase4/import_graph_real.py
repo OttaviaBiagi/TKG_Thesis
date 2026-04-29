@@ -10,17 +10,16 @@ from neo4j import GraphDatabase
 NEO4J_URI      = 'bolt://172.22.43.151:7687'
 NEO4J_USER     = 'neo4j'
 NEO4J_PASSWORD = 'your_password'
-NEO4J_DB       = 'uc4'
 DATA_FILE      = Path(__file__).parent / 'epc_dataset_real.json'
 
 
 def load(session, dataset):
     tx = dataset
 
-    # Project
+    # Project — use_case property disambiguates UC4 nodes from other use cases
     p = tx['project']
-    session.run('MERGE (pr:Project {id:$id}) SET pr += $props',
-                id=p['id'], props=p)
+    session.run('MERGE (pr:Project {id:$id}) SET pr += $props SET pr.use_case=$uc',
+                id=p['id'], props=p, uc='uc4')
     print(f"  Project: {p['name']}")
 
     # Families
@@ -42,8 +41,10 @@ def load(session, dataset):
             MATCH (f:Family {id:a.family})
             MERGE (act)-[:BELONGS_TO]->(f)
         ''', rows=batch)
+    # Filter by family IS NOT NULL to exclude UC3 Activity nodes (which have no family)
     session.run('''
         MATCH (pr:Project {id:$pid}), (act:Activity)
+        WHERE act.family IS NOT NULL
         MERGE (pr)-[:INCLUDES]->(act)
     ''', pid=project_id)
     print(f"  Activities: {len(acts)}")
@@ -149,7 +150,7 @@ if __name__ == '__main__':
         dataset = json.load(f)
 
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
-    with driver.session(database=NEO4J_DB) as session:
+    with driver.session() as session:
         load(session, dataset)
     driver.close()
-    print("\nUseCase4 TKG loaded into Neo4j database 'uc4'")
+    print("\nUseCase4 TKG loaded into Neo4j")
