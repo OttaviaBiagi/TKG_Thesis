@@ -27,16 +27,23 @@ def load(session, dataset):
     print(f"✅ Families: {len(tx['families'])}")
 
     # Activities
-    for a in tx['activities']:
+    project_id = tx['project']['id']
+    BATCH = 200
+    acts = tx['activities']
+    for i in range(0, len(acts), BATCH):
+        batch = acts[i:i+BATCH]
         session.run('''
-            MERGE (act:Activity {id:$id}) SET act += $props
-            WITH act
-            MATCH (f:Family {id:$fam})
+            UNWIND $rows AS a
+            MERGE (act:Activity {id:a.id}) SET act += a
+            WITH act, a
+            MATCH (f:Family {id:a.family})
             MERGE (act)-[:BELONGS_TO]->(f)
-            WITH act
-            MATCH (pr:Project {id:'PROJ-001'})
-            MERGE (pr)-[:INCLUDES]->(act)
-        ''', id=a['id'], props=a, fam=a['family'])
+        ''', rows=batch)
+    # Link all activities to project
+    session.run('''
+        MATCH (pr:Project {id:$pid}), (act:Activity)
+        MERGE (pr)-[:INCLUDES]->(act)
+    ''', pid=project_id)
     print(f"✅ Activities: {len(tx['activities'])}")
 
     # Work Permits + Certifications
@@ -104,12 +111,15 @@ def load(session, dataset):
         ''', rows=batch)
     print(f"✅ Steps: {len(steps)}")
 
-    # PRECEDES relations
-    for seq in tx['step_sequences']:
+    # PRECEDES relations (batched for performance)
+    seqs = tx['step_sequences']
+    for i in range(0, len(seqs), BATCH):
+        batch = seqs[i:i+BATCH]
         session.run('''
-            MATCH (s1:Step {id:$from}), (s2:Step {id:$to})
+            UNWIND $rows AS r
+            MATCH (s1:Step {id:r.from}), (s2:Step {id:r.to})
             MERGE (s1)-[:PRECEDES]->(s2)
-        ''', **seq)
+        ''', rows=batch)
     print(f"✅ PRECEDES relations: {len(tx['step_sequences'])}")
 
     # Workers

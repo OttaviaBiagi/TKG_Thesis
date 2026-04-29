@@ -46,9 +46,10 @@ CERT_REQS = {
 }
 
 HOT_WORK_NEW_CERT   = 'Advanced_Fire_Watch'
-HUMAN_ERROR_RATE    = 0.05   # 5% wrong assignment on specialized permits
-CRITICAL_ACTIVITIES = {'ME.CT', 'CI.TF1', 'ME.TK3', 'BU.PC.AR', 'CI.DM2'}
-HIGH_VARIANCE_DISC  = {'ME', 'CI', 'PI', 'ST'}
+HUMAN_ERROR_RATE   = 0.05
+# High-delay-risk disciplines (real Meram context: mechanical + civil have longest chains)
+HIGH_VARIANCE_DISC = {'ME', 'CI', 'PI', 'ST'}
+CRITICAL_DISC      = {'ME', 'PI'}   # highest estimated hours in Meram → treated as critical
 
 
 def load_dataset():
@@ -131,13 +132,14 @@ def assign_workers(steps, workers, worker_index):
 def simulate_delays(steps, step_sequences):
     """Returns {step_id: delay_days} with cascade propagation."""
     def delay_prob(step):
-        if step['activity_id'] in CRITICAL_ACTIVITIES:
-            return 0.50
-        disc = step['activity_id'].split('.')[0]
-        return 0.30 if disc in HIGH_VARIANCE_DISC else 0.15
+        disc = step.get('discipline', '')
+        if disc in CRITICAL_DISC:
+            return 0.40
+        return 0.25 if disc in HIGH_VARIANCE_DISC else 0.15
 
     def max_delay(step):
-        return 21 if step['activity_id'] in CRITICAL_ACTIVITIES else 10
+        disc = step.get('discipline', '')
+        return 21 if disc in CRITICAL_DISC else 10
 
     delays = {}
     for step in steps:
@@ -183,32 +185,32 @@ def generate_events(steps, workers, assignments, delays, worker_index):
         actual    = planned + timedelta(days=delay)
         after_rc  = planned >= RULE_CHANGE
         permit    = step['permit_type']
-        disc      = step['activity_id'].split('.')[0]
-        on_cp     = step['activity_id'] in CRITICAL_ACTIVITIES
+        disc      = step.get('discipline', '')
+        on_cp     = disc in CRITICAL_DISC
         assign_dt = planned - timedelta(days=random.randint(1, 7))
 
         events['assigned_to'].append({
-            'worker_id':      wid,
-            'step_id':        sid,
-            'date':           assign_dt.isoformat(),
-            'permit_type':    permit,
-            'discipline':     disc,
+            'worker_id':        wid,
+            'step_id':          sid,
+            'date':             assign_dt.isoformat(),
+            'permit_type':      permit,
+            'discipline':       disc,
             'on_critical_path': on_cp,
-            'weight_pct':     step.get('weight_pct', 0),
-            'tx_time':        tx_now,
+            'weight_pct':       step.get('weight_pct', 0),
+            'tx_time':          tx_now,
         })
 
         events['completed'].append({
-            'step_id':       sid,
-            'worker_id':     wid,
-            'planned_date':  planned.isoformat(),
-            'actual_date':   actual.isoformat(),
-            'delay_days':    delay,
-            'status':        'delayed' if delay > 0 else 'on_time',
-            'discipline':    disc,
+            'step_id':          sid,
+            'worker_id':        wid,
+            'planned_date':     planned.isoformat(),
+            'actual_date':      actual.isoformat(),
+            'delay_days':       delay,
+            'status':           'delayed' if delay > 0 else 'on_time',
+            'discipline':       disc,
             'on_critical_path': on_cp,
-            'weight_pct':    step.get('weight_pct', 0),
-            'tx_time':       tx_now,
+            'weight_pct':       step.get('weight_pct', 0),
+            'tx_time':          tx_now,
         })
 
         if is_v:
