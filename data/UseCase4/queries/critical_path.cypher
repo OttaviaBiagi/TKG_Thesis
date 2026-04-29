@@ -16,6 +16,7 @@ RETURN [n IN nodes(path) | n.name]        AS critical_path,
        depth;
 
 // ── Q6: Bottleneck by discipline — permit distribution per discipline ──────────
+// Run against database 'uc4' — Activity nodes here are UC4-only
 MATCH (act:Activity)-[:HAS_STEP]->(s:Step)-[:REQUIRES_PERMIT]->(wp:WorkPermit)
 RETURN act.discipline AS discipline,
        wp.name        AS permit,

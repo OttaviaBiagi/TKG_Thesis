@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 NEO4J_URI      = "bolt://172.22.43.151:7687"
 NEO4J_USER     = "neo4j"
 NEO4J_PASSWORD = "your_password"
+NEO4J_DB       = "uc1"
 DATA_PATH      = "data/raw/synthetic_turbine.csv"
 BATCH_SIZE     = 2000   # righe per batch
 
@@ -140,7 +141,7 @@ def main():
 
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
-    with driver.session() as session:
+    with driver.session(database=NEO4J_DB) as session:
         create_constraints(session)
         create_component_and_sensors(session, df)
         load_observations_batched(session, df)

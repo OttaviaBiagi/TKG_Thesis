@@ -273,7 +273,7 @@ def generate_epc_dataset(family_steps: dict, meram: pd.DataFrame) -> dict:
 
         if fami and fami not in seen_families:
             seen_families.add(fami)
-            families.append({'id': fami, 'name': act_name, 'discipline': disc, 'tx_time': tx_now})
+            families.append({'id': fami, 'name': fami, 'discipline': disc, 'tx_time': tx_now})
 
         # Resolve step templates
         if fami and fami in family_steps:
@@ -295,18 +295,21 @@ def generate_epc_dataset(family_steps: dict, meram: pd.DataFrame) -> dict:
             step_id     = f"{act_id}_S{step_order:02d}"
             permit_type = classify_permit(step_name)
             ts          = get_step_timestamp(disc, step_order, total_steps)
+            # Distribute activity hours across steps by weight_pct
+            step_est_hours = round(est_h * weight_pct / 100.0, 2) if est_h > 0 else 0.0
 
             steps.append({
-                'id':          step_id,
-                'name':        step_name,
-                'order':       step_order,
-                'weight_pct':  weight_pct,
-                'permit_type': permit_type,
-                'activity_id': act_id,
-                'discipline':  disc,
-                'valid_from':  ts.isoformat(),
-                'valid_to':    (ts + timedelta(days=14)).isoformat(),
-                'tx_time':     tx_now,
+                'id':              step_id,
+                'name':            step_name,
+                'order':           step_order,
+                'weight_pct':      weight_pct,
+                'estimated_hours': step_est_hours,
+                'permit_type':     permit_type,
+                'activity_id':     act_id,
+                'discipline':      disc,
+                'valid_from':      ts.isoformat(),
+                'valid_to':        (ts + timedelta(days=14)).isoformat(),
+                'tx_time':         tx_now,
             })
 
             activity_steps.append({
