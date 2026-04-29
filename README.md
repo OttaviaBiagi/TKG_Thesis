@@ -105,34 +105,38 @@ TKG_Thesis/
 - **Neo4j:** 1 Project, 276 Activities, 1,518 Steps, 8 WorkPermits, 33 Certifications, 50 Workers
 - **ML Models (notebooks 05–07):**
 
-**TNTComplEx — Link Prediction (notebook 06)**
+**TNTComplEx — Link Prediction (notebook 06, real Meram data: 34,794 entities, 29,150 steps)**
 
 | Relation | Task | MRR | H@10 | Notes |
 |----------|------|-----|------|-------|
-| REQUIRES_PERMIT | Structural (deterministic) | **0.30** | **1.00** | High H@10 because each step maps to exactly 1 permit type — TNTComplEx memorises the deterministic mapping |
-| ASSIGNED_TO | Stochastic (many-to-many) | 0.003 | 0.00 | Expected near-zero: 1,418 candidate workers per step, assignment driven by schedule not graph structure |
+| REQUIRES_PERMIT | Structural (deterministic) | **0.431** | **1.00** | H@10=1.0 across 8 permit types; MRR improved vs synthetic (0.30→0.43) with 29k real steps |
+| ASSIGNED_TO | Stochastic (many-to-many) | 0.0002 | 0.00 | Expected near-zero: 29,150 candidate steps, assignment driven by schedule not graph structure |
 
-  MRR≈0 on ASSIGNED_TO is structurally expected: embedding models excel at deterministic, rule-like relations; stochastic many-to-many assignments require dynamic context (availability, specialisation) that is not encoded in the quadruple structure.
+  MRR≈0 on ASSIGNED_TO is structurally expected: embedding models excel at deterministic, rule-like relations; stochastic many-to-many assignments require dynamic context (availability, specialisation) not encoded in the quadruple structure.
 
-**Violation Detection — all models (notebook 06, stratified 70/30 split, 5 violations in test set)**
+**Violation Detection — all models (notebook 06, real Meram data, stratified 70/30 split, 214 violations in test set)**
 
 | Model | Type | Precision | Recall | macro-F1 | AUC-ROC | Notes |
 |-------|------|-----------|--------|----------|---------|-------|
-| TNTComplEx (in-sample) | Embedding | 1.000 | 0.944 | **0.985** | — | Scored on full dataset (no held-out split); demonstrates correct PERMIT_DENIED memorisation |
-| TGN Cert-Aware | Neural GNN | 0.058 | 0.600 | 0.523 | 0.851 | Low precision is mathematically constrained by 1.2% violation rate (18/1518 events) |
-| Logistic Regression | Linear | 0.143 | 0.200 | 0.578 | 0.869 | Strongest AUC; conservative threshold yields low recall on minority class |
-| Random Forest | Tree ensemble | 1.000 | 0.200 | 0.664 | 0.837 | Zero false positives but misses 80% of violations; high-confidence minority detector |
+| **TGN-B** (focal γ=2 + balanced batching) | Neural GNN | **1.000** | **0.547** | **0.852** | **0.951** | **Best overall**: zero false positives, catches 54.7% of violations on 214-violation test set |
+| TNTComplEx | Embedding | 0.807 | 0.757 | 0.889 | 0.941 | PERMIT_DENIED scoring on full 47k events; most balanced P/R trade-off |
+| TGN-A (pos_weight≈66) | Neural GNN | 0.054 | 0.285 | 0.523 | 0.855 | Baseline TGN; high recall priority but many false positives |
+| Logistic Regression | Linear | 0.056 | 0.159 | 0.528 | 0.843 | Conservative threshold; good AUC but low recall |
+| Random Forest | Tree ensemble | 0.064 | 0.075 | 0.527 | 0.838 | Too conservative on real data; misses 92% of violations |
 | **T-Logic R1+R2** | **Symbolic** | **0.58** | **1.00** | **0.735** | — | **Perfect recall** (0 missed violations) with full interpretability — notebook 07 |
 
-  **Precision ceiling:** with only 18 violations in 1,518 events (1.2% rate), a model flagging all 18 plus 13 false positives still achieves P=0.58. Neural models (TGN) trade precision for recall to avoid missing safety-critical events — the right trade-off for HSE compliance. Logistic Regression achieves the highest AUC (0.869) showing good discrimination, but conservative threshold suppresses recall. Random Forest achieves perfect precision but only catches 1 of 5 test violations — too conservative for safety use. T-Logic (notebook 07) achieves the best safety profile: perfect recall with interpretable rules, at the cost of some false positives (latent risks the simulator's 5% human-error model did not flag as violations).
+  **Key result (real data):** TGN-B (focal loss + balanced batching) achieves **P=1.000, R=0.547, F1=0.852** on a statistically valid test set of 214 violations — the only model with zero false positives. TNTComplEx provides the most balanced profile (P=0.807, R=0.757) and is the only approach that simultaneously handles link prediction and violation detection. T-Logic remains the preferred choice for safety-critical deployment due to perfect recall and full interpretability.
 
-  **Bitemporal rule change detection:** TNTComplEx score for `(hot_work, REQUIRES_PERMIT, Advanced_Fire_Watch, τ)` jumps from near-zero to **12.25 at month 6** — the model correctly captures the compliance rule update without any explicit supervision.
+  **Precision ceiling:** with 713 violations in 47,365 events (1.5% rate), precision is constrained — but with 214 test violations, metrics are now statistically reliable (vs 5 violations in the synthetic baseline). TGN-B breaks the ceiling via focal loss + oversampling, achieving zero false positives at the cost of missing 45% of violations.
+
+  **Bitemporal rule change detection:** TNTComplEx score for `(hot_work, REQUIRES_CERT, Advanced_Fire_Watch, τ)` peaks at **18.16 at month 6** (vs 12.25 on synthetic data) — stronger signal with real data confirming the model correctly captures the compliance rule update without explicit supervision.
 
 #### What is real vs synthetic in UseCase4
 | Data | Source |
 |---|---|
-| Activity / Family / Step names and codes | ✅ Real TR Family_Steps_macro.xlsm |
-| Step sequences (PRECEDES) | ✅ Real TR data |
+| Activity / Family / Step names and codes | ✅ Real TR Meram PCS + Family_Steps_macro.xlsm (8,762 activities) |
+| Step sequences (PRECEDES) | ✅ Real TR Family Steps templates |
+| Estimated hours, earned hours, discipline, area, CWP | ✅ Real TR Meram PCS data |
 | Discipline timeline (months) | ⚠️ Estimated (hardcoded) |
 | Workers, certifications, work permits | ❌ Synthetic |
 | Bitemporal rule change scenario | ❌ Synthetic (for demo) |
@@ -146,7 +150,7 @@ TKG_Thesis/
 | **Domain** | Synthetic turbine | Oil well anomaly detection | EPC delay causality | EPC project compliance |
 | **Graph type** | Sensor TKG (dynamic) | Sensor TKG (dynamic) | Delay causal TKG | Planning TKG (bitemporal) |
 | **ML approach** | IsolationForest + TGN | TGN → RF/XGBoost (improved) | T-Logic symbolic rules | TNTComplEx, TGN, T-Logic |
-| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | T-Logic F1=0.735, Recall=1.0; TNTComplEx H@10=1.0 on REQUIRES_PERMIT |
+| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | TGN-B F1=0.852 P=1.0 (real data); TNTComplEx H@10=1.0 REQUIRES_PERMIT MRR=0.431; T-Logic Recall=1.0 |
 
 **Thesis contribution:** TKG as a unifying framework for heterogeneous industrial domains — anomaly detection, causal analysis, and compliance tracking all benefit from the temporal graph structure, with symbolic rules (T-Logic) providing interpretability critical for safety-critical applications.
 
