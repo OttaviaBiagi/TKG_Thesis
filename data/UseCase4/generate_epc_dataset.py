@@ -33,10 +33,21 @@ from datetime import datetime, timedelta, timezone
 random.seed(42)
 
 # ─── Config ──────────────────────────────────────────────────────────────────
-FAMILY_STEPS_FILE = Path(
-    r'C:\Users\obiagi\OneDrive - Tecnicas Reunidas, S.A\Documents\Family Steps macro.xlsm'
-)
-MERAM_FILE  = Path(__file__).parent / 'meram' / 'Meram_PCS_Progress.xlsx'
+# Family Steps file — resolved at runtime across Windows / Linux environments
+_SCRIPT_DIR = Path(__file__).parent
+_FAMILY_STEPS_CANDIDATES = [
+    _SCRIPT_DIR / 'Family_Steps_macro.xlsm',                                          # original location (Linux)
+    Path.home() / 'TKG_Thesis' / 'data' / 'UseCase4' / 'Family_Steps_macro.xlsm',    # Linux home fallback
+    Path(r'C:\Users\obiagi\OneDrive - Tecnicas Reunidas, S.A\Documents\Family Steps macro.xlsm'),  # Windows OneDrive
+    Path(r'C:\Users\obiagi\OneDrive - Tecnicas Reunidas, S.A\Microsoft Copilot Chat Files\Family Steps macro.xlsm'),
+]
+FAMILY_STEPS_FILE = next((p for p in _FAMILY_STEPS_CANDIDATES if p.exists()), None)
+if FAMILY_STEPS_FILE is None:
+    raise FileNotFoundError(
+        "Family_Steps_macro.xlsm not found. Place it at data/UseCase4/Family_Steps_macro.xlsm"
+    )
+
+MERAM_FILE = _SCRIPT_DIR / 'meram' / 'Meram_PCS_Progress.xlsx'
 OUTPUT_DIR  = Path(__file__).parent
 PROJECT_START = datetime(2024, 1, 1, tzinfo=timezone.utc)
 
