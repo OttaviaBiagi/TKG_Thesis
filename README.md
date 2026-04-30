@@ -95,14 +95,15 @@ TKG_Thesis/
 - **TKG quadruples:** BELONGS_TO_WP, IS_DELAYED, IMPACTS_ACTIVITY, LINKED_TO_ACTIVITY, DELIVERED_LATE, APPROVED_LATE
 
 ### UseCase4 — EPC Compliance, Scheduling & Dynamic TKG
-- **Data:** Real TR Family Steps (276 activities, 1,518 steps, 17 disciplines) + synthetic HSE layer
+- **Data:** Real TR Meram project data (5,555 activities, 29,150 steps, 17 disciplines) + synthetic HSE layer (workers, certifications, work permits)
+- **Source:** Family_Steps_macro.xlsm + Meram PCS Excel (8,762 rows deduplicated to 5,555 unique activities)
 - **Approach:** Bitemporal TKG (valid_time + transaction_time) + simulated dynamic event stream
 - **Results:**
   - Bitemporal compliance: 8 workers qualified before rule change → 3 after (5 lost compliance)
   - Critical path: 18 steps (ME.CT — Cooling Tower Erection)
   - Main bottleneck: CI discipline (563 steps), BU.BR.AR blocks 57,341 downstream steps
-  - Dynamic events: 1,518 ASSIGNED_TO, 18 PERMIT_DENIED (1.2% violation rate), delay cascade propagation
-- **Neo4j:** 1 Project, 276 Activities, 1,518 Steps, 8 WorkPermits, 33 Certifications, 50 Workers
+  - Dynamic events: 29,150 ASSIGNED_TO, 449 PERMIT_DENIED (1.5% violation rate), delay cascade propagation
+- **Neo4j:** 1 Project, 5,555 Activities, 29,150 Steps, 8 WorkPermits, 33 Certifications, 50 Workers
 - **ML Models (notebooks 05–07):**
 
 **TNTComplEx — Link Prediction (notebook 06, real Meram data: 34,794 entities, 29,150 steps)**
