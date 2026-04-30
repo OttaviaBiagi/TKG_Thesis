@@ -12,7 +12,7 @@ from neo4j import GraphDatabase
 from datetime import datetime, timezone
 
 # ── Config ──────────────────────────────────────────────────
-NEO4J_URI      = "bolt://172.22.43.151:7687"
+NEO4J_URI      = "bolt://localhost:7687"
 NEO4J_USER     = "neo4j"
 NEO4J_PASSWORD = "your_password"
 DATA_PATH      = "data/raw/synthetic_turbine.csv"

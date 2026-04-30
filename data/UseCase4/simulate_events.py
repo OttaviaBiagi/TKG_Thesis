@@ -27,7 +27,7 @@ random.seed(42)
 DATA_FILE   = Path(__file__).parent / 'epc_dataset_real.json'
 OUTPUT_FILE = Path(__file__).parent / 'epc_events.json'
 
-NEO4J_URI      = 'bolt://172.22.43.151:7687'
+NEO4J_URI      = 'bolt://localhost:7687'
 NEO4J_USER     = 'neo4j'
 NEO4J_PASSWORD = 'your_password'
 
