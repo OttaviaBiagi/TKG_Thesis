@@ -220,8 +220,10 @@ def load_data():
     meram['Area']            = meram['Area'].fillna('').astype(str).str.strip()
     meram['Module']          = meram['Module'].fillna('').astype(str).str.strip()
     meram['CWP']             = meram['CWP'].fillna('').astype(str).str.strip()
-    print(f"✅ Loaded {len(meram)} Meram activities ({meram['Disc'].nunique()} disciplines, "
-          f"{meram['Fami'].nunique()} families)")
+    before = len(meram)
+    meram = meram.drop_duplicates(subset=['ActID'], keep='first').reset_index(drop=True)
+    print(f"✅ Loaded {before} Meram rows → {len(meram)} unique activities "
+          f"({meram['Disc'].nunique()} disciplines, {meram['Fami'].nunique()} families)")
     matched = meram['Fami'].isin(family_steps).sum()
     print(f"   {matched} activities ({matched/len(meram)*100:.1f}%) have matching step templates")
 
