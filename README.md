@@ -115,22 +115,24 @@ TKG_Thesis/
 
   MRR≈0 on ASSIGNED_TO is structurally expected: embedding models excel at deterministic, rule-like relations; stochastic many-to-many assignments require dynamic context (availability, specialisation) not encoded in the quadruple structure.
 
-**Violation Detection — all models (notebook 06, real Meram data, stratified 70/30 split, 214 violations in test set)**
+**Violation Detection — all models (real Meram data, stratified 70/30 split, 134 violations in test set)**
 
 | Model | Type | Precision | Recall | macro-F1 | AUC-ROC | Notes |
 |-------|------|-----------|--------|----------|---------|-------|
-| **TGN-B** (focal γ=2 + balanced batching) | Neural GNN | **1.000** | **0.547** | **0.852** | **0.951** | **Best overall**: zero false positives, catches 54.7% of violations on 214-violation test set |
-| TNTComplEx | Embedding | 0.807 | 0.757 | 0.889 | 0.941 | PERMIT_DENIED scoring on full 47k events; most balanced P/R trade-off |
-| TGN-A (pos_weight≈66) | Neural GNN | 0.054 | 0.285 | 0.523 | 0.855 | Baseline TGN; high recall priority but many false positives |
-| Logistic Regression | Linear | 0.056 | 0.159 | 0.528 | 0.843 | Conservative threshold; good AUC but low recall |
-| Random Forest | Tree ensemble | 0.064 | 0.075 | 0.527 | 0.838 | Too conservative on real data; misses 92% of violations |
-| **T-Logic R1+R2** | **Symbolic** | **0.58** | **1.00** | **0.735** | — | **Perfect recall** (0 missed violations) with full interpretability — notebook 07 |
+| **T-Logic R1+R2** | **Symbolic** | **1.00** | **1.00** | **1.00** | — | Perfect P/R on post-rule-change test (274 violations) — notebook 07 |
+| Random Forest | Feature ML | 0.053 | 0.141 | 0.525 | **0.933** | Best AUC; temporal split — notebook 06 |
+| TGN cert-aware | Neural GNN | 0.060 | 0.259 | 0.529 | 0.859 | Stratified split, cert-aware features — notebook 06 |
+| Logistic Regression | Feature ML | 0.050 | 0.193 | 0.522 | 0.857 | Temporal split — notebook 06 |
+| TGN-B (focal γ=2 + balanced batching) | Neural GNN | 0.060 | 0.207 | 0.530 | 0.767 | Stratified split, feature-aware — scripts/eval_models_testset.py |
+| TNTComplEx (violation scoring) | KG Embedding | — | — | — | 0.447 | **Below random**: PERMIT_DENIED scoring not suited for event classification |
 
-  **Key result (real data):** TGN-B (focal loss + balanced batching) achieves **P=1.000, R=0.547, F1=0.852** on a statistically valid test set of 214 violations — the only model with zero false positives. TNTComplEx provides the most balanced profile (P=0.807, R=0.757) and is the only approach that simultaneously handles link prediction and violation detection. T-Logic remains the preferred choice for safety-critical deployment due to perfect recall and full interpretability.
+  **Key result:** T-Logic R1+R2 achieves **P=1.0, R=1.0** on the temporal test set — perfect recall with full interpretability. Among probabilistic models, **Random Forest (AUC=0.933)** and **TGN cert-aware (AUC=0.859)** are the strongest. TNTComplEx is not suited for violation *detection* (AUC<0.5) — its value is structural link prediction (see table above).
 
-  **Precision ceiling:** with 713 violations in 47,365 events (1.5% rate), precision is constrained — but with 214 test violations, metrics are now statistically reliable (vs 5 violations in the synthetic baseline). TGN-B breaks the ceiling via focal loss + oversampling, achieving zero false positives at the cost of missing 45% of violations.
+  **Why TNTComplEx fails for violation detection:** The model predicts graph structure (which triples exist), not event outcomes. PERMIT_DENIED is driven by cert-state and domain rules, not graph topology. TNTComplEx excels at deterministic structural relations (REQUIRES_PERMIT H@10=1.0) but cannot generalise to stochastic assignment violations.
 
-  **Bitemporal rule change detection:** TNTComplEx score for `(hot_work, REQUIRES_CERT, Advanced_Fire_Watch, τ)` peaks at **18.16 at month 6** (vs 12.25 on synthetic data) — stronger signal with real data confirming the model correctly captures the compliance rule update without explicit supervision.
+  **Precision ceiling:** with 449 violations in 29,150 events (1.5% rate) all models show low precision at high recall — this is structurally expected at this imbalance ratio. AUC-ROC is the correct comparison metric; T-Logic bypasses this by using domain rules directly.
+
+  **Bitemporal rule change detection:** TNTComplEx score for `(hot_work, REQUIRES_CERT, Advanced_Fire_Watch, τ)` peaks at **month 6** confirming the model correctly captures the compliance rule update in its structural embeddings, even though it cannot classify individual violation events.
 
 #### What is real vs synthetic in UseCase4
 | Data | Source |
@@ -151,7 +153,7 @@ TKG_Thesis/
 | **Domain** | Synthetic turbine | Oil well anomaly detection | EPC delay causality | EPC project compliance |
 | **Graph type** | Sensor TKG (dynamic) | Sensor TKG (dynamic) | Delay causal TKG | Planning TKG (bitemporal) |
 | **ML approach** | IsolationForest + TGN | TGN → RF/XGBoost (improved) | T-Logic symbolic rules | TNTComplEx, TGN, T-Logic |
-| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | TGN-B F1=0.852 P=1.0 (real data); TNTComplEx H@10=1.0 REQUIRES_PERMIT MRR=0.431; T-Logic Recall=1.0 |
+| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | T-Logic P=1.0 R=1.0; RF AUC=0.933; TNTComplEx REQUIRES_PERMIT MRR=0.431 H@10=1.0 (link prediction) |
 
 **Thesis contribution:** TKG as a unifying framework for heterogeneous industrial domains — anomaly detection, causal analysis, and compliance tracking all benefit from the temporal graph structure, with symbolic rules (T-Logic) providing interpretability critical for safety-critical applications.
 
