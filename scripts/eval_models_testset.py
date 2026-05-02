@@ -93,14 +93,17 @@ def make_feat(wid, sid, date_str):
     missing = [c for c in required if c not in wc or not (wc[c][0] <= dt <= wc[c][1])]
     expires_soon = int(any((wc[c][1]-dt).days < 30
                            for c in required if c in wc and wc[c][0] <= dt <= wc[c][1]))
-    return np.array([
+    wp = step.get('weight_pct', 0)
+    wp = 0.0 if (wp is None or wp != wp) else float(wp)  # guard NaN
+    feat = np.array([
         PERMIT_ENC.get(permit, 0),
         DISC_ENC.get(disc, 0),
         after_rc,
-        int(step.get('on_critical_path', False) or False),
-        float(step.get('weight_pct') or 0),
+        int(bool(step.get('on_critical_path', False))),
+        wp,
         expires_soon,
     ], dtype=np.float32)
+    return np.nan_to_num(feat, nan=0.0)
 
 # Build event rows
 all_rows = []
