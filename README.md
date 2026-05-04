@@ -110,23 +110,23 @@ TKG_Thesis/
 
 | Relation | Task | MRR | H@10 | Notes |
 |----------|------|-----|------|-------|
-| REQUIRES_PERMIT | Structural (deterministic) | **0.431** | **1.00** | H@10=1.0 across 8 permit types; MRR improved vs synthetic (0.30→0.43) with 29k real steps |
-| ASSIGNED_TO | Stochastic (many-to-many) | 0.0002 | 0.00 | Expected near-zero: 29,150 candidate steps, assignment driven by schedule not graph structure |
+| REQUIRES_PERMIT | Structural (deterministic) | **0.401** | **1.00** | H@10=1.0 across 8 permit types; MRR >> random (1/8=0.125) confirms model learned step→permit mapping |
+| ASSIGNED_TO | Stochastic (many-to-many) | 0.0003 | 0.00 | Expected near-zero: 29,150 candidate steps, assignment driven by schedule not graph structure |
 
   MRR≈0 on ASSIGNED_TO is structurally expected: embedding models excel at deterministic, rule-like relations; stochastic many-to-many assignments require dynamic context (availability, specialisation) not encoded in the quadruple structure.
 
-**Violation Detection — all models (real Meram data, stratified 70/30 split, 134 violations in test set)**
+**Violation Detection — all models (real Meram data)**
 
-| Model | Type | Precision | Recall | macro-F1 | AUC-ROC | Notes |
-|-------|------|-----------|--------|----------|---------|-------|
-| **T-Logic R1+R2** | **Symbolic** | **1.00** | **1.00** | **1.00** | — | Perfect P/R on post-rule-change test (274 violations) — notebook 07 |
-| Random Forest | Feature ML | 0.053 | 0.141 | 0.525 | **0.933** | Best AUC; temporal split — notebook 06 |
-| TGN cert-aware | Neural GNN | 0.060 | 0.259 | 0.529 | 0.859 | Stratified split, cert-aware features — notebook 06 |
-| Logistic Regression | Feature ML | 0.050 | 0.193 | 0.522 | 0.857 | Temporal split — notebook 06 |
-| TGN-B (focal γ=2 + balanced batching) | Neural GNN | 0.060 | 0.207 | 0.530 | 0.767 | Stratified split, feature-aware — scripts/eval_models_testset.py |
-| TNTComplEx (violation scoring) | KG Embedding | — | — | — | 0.447 | **Below random**: PERMIT_DENIED scoring not suited for event classification |
+| Model | Type | Precision | Recall | macro-F1 | AUC-ROC | Split | Notes |
+|-------|------|-----------|--------|----------|---------|-------|-------|
+| **T-Logic R1+R2** | **Symbolic** | **1.00** | **1.00** | **1.00** | — | Pre/post rule-change | Perfect P/R on post-rule-change test (274 violations) — notebook 07 |
+| Random Forest | Feature ML | 0.143 | 0.196 | 0.580 | **0.933** | Temporal (51 test violations) | Best AUC; notebook 06 |
+| TGN-B (focal γ=2 + balanced batching) | Neural GNN | 0.057 | 0.200 | 0.528 | **0.869** | Stratified 70/30 (135 violations) | focal loss, balanced batching — notebook 06 |
+| TGN cert-aware | Neural GNN | 0.060 | 0.259 | 0.529 | 0.859 | Stratified 70/30 (135 violations) | cert-aware features — notebook 06 |
+| Logistic Regression | Feature ML | 0.024 | 0.627 | 0.483 | 0.856 | Temporal (51 test violations) | notebook 06 |
+| TNTComplEx (violation scoring) | KG Embedding | — | — | — | 0.447 | Stratified 70/30 | **Below random**: PERMIT_DENIED scoring not suited for event classification |
 
-  **Key result:** T-Logic R1+R2 achieves **P=1.0, R=1.0** on the temporal test set — perfect recall with full interpretability. Among probabilistic models, **Random Forest (AUC=0.933)** and **TGN cert-aware (AUC=0.859)** are the strongest. TNTComplEx is not suited for violation *detection* (AUC<0.5) — its value is structural link prediction (see table above).
+  **Key result:** T-Logic R1+R2 achieves **P=1.0, R=1.0** on the post-rule-change test set (274 violations) — perfect recall with full interpretability. Among probabilistic models, **Random Forest (AUC=0.933)** and **TGN-B (AUC=0.869)** are the strongest. TNTComplEx is not suited for violation *detection* (AUC=0.447, below random) — its value is structural link prediction (see table above).
 
   **Why TNTComplEx fails for violation detection:** The model predicts graph structure (which triples exist), not event outcomes. PERMIT_DENIED is driven by cert-state and domain rules, not graph topology. TNTComplEx excels at deterministic structural relations (REQUIRES_PERMIT H@10=1.0) but cannot generalise to stochastic assignment violations.
 
@@ -153,7 +153,7 @@ TKG_Thesis/
 | **Domain** | Synthetic turbine | Oil well anomaly detection | EPC delay causality | EPC project compliance |
 | **Graph type** | Sensor TKG (dynamic) | Sensor TKG (dynamic) | Delay causal TKG | Planning TKG (bitemporal) |
 | **ML approach** | IsolationForest + TGN | TGN → RF/XGBoost (improved) | T-Logic symbolic rules | TNTComplEx, TGN, T-Logic |
-| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | T-Logic P=1.0 R=1.0; RF AUC=0.933; TNTComplEx REQUIRES_PERMIT MRR=0.431 H@10=1.0 (link prediction) |
+| **Main result** | Threshold-tuned IF baseline | Improved recall per anomaly class | R1+R2+R3 causal validation | T-Logic P=1.0 R=1.0; RF AUC=0.933; TGN-B AUC=0.869; TNTComplEx REQUIRES_PERMIT MRR=0.401 H@10=1.0 (link prediction) |
 
 **Thesis contribution:** TKG as a unifying framework for heterogeneous industrial domains — anomaly detection, causal analysis, and compliance tracking all benefit from the temporal graph structure, with symbolic rules (T-Logic) providing interpretability critical for safety-critical applications.
 
