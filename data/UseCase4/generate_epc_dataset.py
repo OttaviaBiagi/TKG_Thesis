@@ -206,7 +206,7 @@ def load_data():
     for fam, grp in fs.groupby('FAMILY'):
         grp = grp.sort_values('#')
         family_steps[fam] = [
-            (str(row['STEP']).strip(), int(row['#']), float(row['%'] or 0))
+            (str(row['STEP']).strip(), int(row['#']), 0.0 if pd.isna(row['%']) else float(row['%']))
             for _, row in grp.iterrows()
         ]
     print(f"✅ Loaded {len(fs)} step templates across {len(family_steps)} families")
@@ -414,7 +414,7 @@ if __name__ == '__main__':
 
     out = OUTPUT_DIR / 'epc_dataset_real.json'
     with open(out, 'w') as f:
-        json.dump(dataset, f, indent=2, default=str)
+        json.dump(dataset, f, indent=2, default=str, allow_nan=False)
 
     m = dataset['metadata']
     print(f"\n✅ Dataset generated: {out}")
