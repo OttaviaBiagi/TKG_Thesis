@@ -1,0 +1,15 @@
+{
+  "split": "stratified 70/30 (315 train violations, 134 test violations)",
+  "TNTComplEx": {
+    "P": 0.033,
+    "R": 0.0222,
+    "F1": 0.5069,
+    "AUC": 0.4472
+  },
+  "TGN_B_focal_g2": {
+    "P": 0.0596,
+    "R": 0.2074,
+    "F1": 0.53,
+    "AUC": 0.7669
+  }
+}

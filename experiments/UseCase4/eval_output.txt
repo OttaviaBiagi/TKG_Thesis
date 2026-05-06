@@ -1,0 +1,64 @@
+/home/obiaggi/.local/lib/python3.10/site-packages/matplotlib/projections/__init__.py:63: UserWarning: Unable to import Axes3D. This may be due to multiple versions of Matplotlib being installed (e.g. as a system package and as a pip package). As a result, the 3D projection is not available.
+  warnings.warn("Unable to import Axes3D. This may be due to multiple versions of "
+Device: cuda
+
+Total events: 29150 | Violations: 449 (1.5%)
+Train: 20405 events, 314 violations
+Test:  8745 events,  135 violations
+
+Entities: 34794 | Relations: 7 | Triples: 102781
+
+============================================================
+1. TNTComplEx — stratified 70/30 split, scored on test events
+============================================================
+  Epoch  10/50  loss: 1.1738
+  Epoch  20/50  loss: 1.0664
+  Epoch  30/50  loss: 1.0271
+  Epoch  40/50  loss: 1.0062
+  Epoch  50/50  loss: 0.9932
+
+TNTComplEx — stratified test (135 violations / 8745 events)
+              precision    recall  f1-score   support
+
+      Normal      0.985     0.990     0.987      8610
+   Violation      0.033     0.022     0.027       135
+
+    accuracy                          0.975      8745
+   macro avg      0.509     0.506     0.507      8745
+weighted avg      0.970     0.975     0.972      8745
+
+AUC: 0.4472  P: 0.0330  R: 0.0222  F1: 0.5069
+
+============================================================
+2. TGN-B — focal γ=2, balanced batching, feature-aware, stratified 70/30
+============================================================
+Train violations: 314 | normals: 20091
+  Epoch  10/50  focal loss: 0.0837
+  Epoch  20/50  focal loss: 0.0821
+  Epoch  30/50  focal loss: 0.0693
+  Epoch  40/50  focal loss: 0.0624
+  Epoch  50/50  focal loss: 0.0588
+
+TGN-B — stratified test (135 violations / 8745 events)
+              precision    recall  f1-score   support
+
+      Normal      0.987     0.949     0.967      8610
+   Violation      0.060     0.207     0.093       135
+
+    accuracy                          0.937      8745
+   macro avg      0.523     0.578     0.530      8745
+weighted avg      0.973     0.937     0.954      8745
+
+AUC: 0.7669  P: 0.0596  R: 0.2074  F1: 0.5300
+
+ROC saved.
+
+============================================================
+FINAL — stratified test set (134 violations)
+============================================================
+Model                               P        R       F1      AUC
+------------------------------------------------------------
+TNTComplEx                     0.0330   0.0222   0.5069   0.4472
+TGN_B_focal_g2                 0.0596   0.2074   0.5300   0.7669
+============================================================
+Saved: experiments/UseCase4/results_test_set.json
