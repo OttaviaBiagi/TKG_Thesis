@@ -34,7 +34,7 @@ FAMILY_STEPS_XLS = next((p for p in FAMILY_STEPS_CANDIDATES if p.exists()), None
 PROJECT_START = datetime(2024, 1, 1, tzinfo=timezone.utc)
 PROJECT_END   = datetime(2026, 1, 1, tzinfo=timezone.utc)
 RULE_CHANGE   = datetime(2024, 6, 29, tzinfo=timezone.utc)
-TX_DATE       = '2026-04-30'
+TX_DATE       = None  # derived from data after load
 
 PASS = FAIL = WARN = 0
 
@@ -69,6 +69,10 @@ permits  = ds['work_permits']
 
 acts_dict  = {a['id']: a for a in acts}
 steps_dict = {s['id']: s for s in steps}
+
+# Derive TX_DATE from the data (single-snapshot assumption)
+_all_tx = {(s.get('tx_time') or '')[:10] for s in steps} | {(a.get('tx_time') or '')[:10] for a in acts}
+TX_DATE = _all_tx.pop() if len(_all_tx) == 1 else None
 steps_by_act = defaultdict(list)
 for s in steps:
     steps_by_act[s['activity_id']].append(s)
@@ -312,19 +316,20 @@ else:
 # tx_time consistency (single snapshot)
 tx_dates_steps = set((s.get('tx_time') or '')[:10] for s in steps)
 tx_dates_acts  = set((a.get('tx_time') or '')[:10] for a in acts)
-if tx_dates_steps == {TX_DATE} and tx_dates_acts == {TX_DATE}:
-    ok(f'All nodes have tx_time = {TX_DATE} (single transaction snapshot)')
+if len(tx_dates_steps) == 1 and tx_dates_steps == tx_dates_acts:
+    ok(f'All nodes share a single tx_time = {TX_DATE} (single transaction snapshot)')
 else:
     warn(f'Multiple tx_time values: steps={tx_dates_steps}, acts={tx_dates_acts}')
 
 # tx_time > max valid_to
 all_vt = [parse_dt(s.get('valid_to')) for s in steps + acts if s.get('valid_to')]
 max_vt = max(d for d in all_vt if d)
-tx_snap = datetime(2026, 4, 30, tzinfo=timezone.utc)
-if tx_snap > max_vt:
-    ok(f'tx_time ({tx_snap.date()}) > max valid_to ({max_vt.date()}) — snapshot recorded after all validity intervals')
-else:
-    warn(f'tx_time ({tx_snap.date()}) is NOT after max valid_to ({max_vt.date()})')
+if TX_DATE:
+    tx_snap = datetime.fromisoformat(TX_DATE).replace(tzinfo=timezone.utc)
+    if tx_snap > max_vt:
+        ok(f'tx_time ({tx_snap.date()}) > max valid_to ({max_vt.date()}) — snapshot recorded after all validity intervals')
+    else:
+        warn(f'tx_time ({tx_snap.date()}) is NOT after max valid_to ({max_vt.date()})')
 
 # ─── LAYER 5: Synthetic rule-change event ────────────────────────────────────
 print('\n=== LAYER 5: Bitemporal rule-change event ===')
@@ -363,6 +368,24 @@ if cert_err == 0:
     ok(f'All {total_certs} worker cert records have valid_from < valid_to')
 else:
     fail(f'{cert_err} worker cert records with missing or inverted dates')
+
+# after_rule_change flag: must be consistent with event date vs RULE_CHANGE
+try:
+    ev_file = DATA_DIR / 'epc_events.json'
+    if ev_file.exists():
+        ev = json.load(ev_file.open(encoding='utf-8'))
+        rc_str = RULE_CHANGE.strftime('%Y-%m-%d')
+        arc_wrong = [e for e in ev.get('permit_denied', [])
+                     if e.get('after_rule_change') and e.get('date','') < rc_str]
+        if not arc_wrong:
+            ok(f'after_rule_change flag consistent with RULE_CHANGE date for all '
+               f'{len(ev["permit_denied"])} permit_denied events')
+        else:
+            fail(f'{len(arc_wrong)} permit_denied events flagged after_rule_change=True '
+                 f'but dated before {rc_str}',
+                 f'e.g. {arc_wrong[0]["date"]}')
+except Exception as exc:
+    warn(f'Could not check after_rule_change flags: {exc}')
 
 # Permit coverage: every permit_type referenced by steps exists in work_permits
 permit_ids   = {p['id'] for p in permits}
