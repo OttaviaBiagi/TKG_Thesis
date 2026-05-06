@@ -95,7 +95,7 @@ TKG_Thesis/
 - **TKG quadruples:** BELONGS_TO_WP, IS_DELAYED, IMPACTS_ACTIVITY, LINKED_TO_ACTIVITY, DELIVERED_LATE, APPROVED_LATE
 
 ### UseCase4 — EPC Compliance, Scheduling & Dynamic TKG
-- **Data:** Real TR Meram project data (5,555 activities, 29,150 steps, 17 disciplines) + synthetic HSE layer (workers, certifications, work permits)
+- **Data:** Real TR Meram project data (5,555 activities, 29,150 steps, 14 disciplines) + synthetic HSE layer (workers, certifications, work permits)
 - **Source:** Family_Steps_macro.xlsm + Meram PCS Excel (8,762 rows deduplicated to 5,555 unique activities)
 - **Approach:** Bitemporal TKG (valid_time + transaction_time) + simulated dynamic event stream
 - **Results:**
@@ -140,9 +140,123 @@ TKG_Thesis/
 | Activity / Family / Step names and codes | ✅ Real TR Meram PCS + Family_Steps_macro.xlsm (8,762 activities) |
 | Step sequences (PRECEDES) | ✅ Real TR Family Steps templates |
 | Estimated hours, earned hours, discipline, area, CWP | ✅ Real TR Meram PCS data |
-| Discipline timeline (months) | ⚠️ Estimated (hardcoded) |
+| Discipline timeline (months) | ⚠️ Estimated (hardcoded per discipline) |
 | Workers, certifications, work permits | ❌ Synthetic |
 | Bitemporal rule change scenario | ❌ Synthetic (for demo) |
+
+---
+
+#### Data quality verification — `tests/test_real_data.py`
+
+Run `python tests/test_real_data.py` to verify the full dataset. Results (22 PASS, 0 FAIL, 3 WARN):
+
+**Layer 1 — Real activity data (cross-checked against Meram_PCS_Progress.xlsx)**
+
+| Check | Result |
+|---|---|
+| Activity count | ✅ 5,555 unique ActIDs in JSON and Excel |
+| All ActIDs covered | ✅ 0 missing, 0 phantom entries |
+| Discipline field | ✅ 0 mismatches across all 5,555 activities |
+| estimated_hours | ✅ 0 mismatches (exact float equality) |
+| earned_hours | ✅ 0 mismatches |
+| Family codes | ✅ 0 mismatches (167 unique families) |
+| Disciplines present | ✅ 14 disciplines: BU CI EL FP IN IS ME PA PE PI PL PR SP ST |
+| progress_pct formula | ✅ `progress_pct = earned_hours / estimated_hours × 100` for all 5,555 |
+| Progress > 100% | ⚠️ 1 real case: C113131PIPR300010 (PI, 125.1%) — earned > estimated |
+
+**Layer 2 — Step templates (cross-checked against Family_Steps_macro.xlsm)**
+
+| Check | Result |
+|---|---|
+| Activities with known template | ✅ 5,300 / 5,555 (95.4%) |
+| Step name + order + weight match | ✅ 5,300 / 5,300 (100%) exact match |
+| Activities without template | ⚠️ 255 (mostly BU discipline: BUARC*, BUARR* families not in xlsm) → get 1 placeholder step |
+
+**Layer 3 — PRECEDES relationships**
+
+| Check | Result |
+|---|---|
+| Sequential order (step.order + 1) | ✅ All 23,595 PRECEDES edges correct |
+| Self-loops | ✅ 0 |
+| Orphan steps (unknown activity) | ✅ 0 |
+
+**Layer 4 — Synthetic bitemporal fields**
+
+| Check | Result |
+|---|---|
+| valid_from < valid_to (steps) | ✅ All 29,150 steps |
+| valid_from < valid_to (activities) | ✅ All 5,555 activities |
+| tx_time = 2026-04-30 (single snapshot) | ✅ All nodes |
+| tx_time > max(valid_to) | ✅ 2026-04-30 > 2025-07-11 |
+| Step valid_to > activity valid_to | ⚠️ 5,433 steps — expected: step dates from hardcoded DISCIPLINE_TIMELINE, activity dates from Excel baseline; the two may not align perfectly |
+
+**Layer 5 — Bitemporal rule-change event**
+
+| Check | Result |
+|---|---|
+| Rule change date | ✅ 2024-06-29 (correct) |
+| Affected permit | ✅ hot_work |
+| New required cert | ✅ Advanced Fire Watch |
+| Worker cert records | ✅ All 146 have valid_from < valid_to |
+| Permit type coverage | ✅ All 8 permit types present |
+
+---
+
+#### Bitemporal representation — concrete example
+
+Below is how a single activity and its steps are represented in the TKG, showing both temporal axes.
+
+**Activity node** (`A1810` — real Meram data):
+```json
+{
+  "id":              "A1810",
+  "name":            "U23 - Leak Test (573) (Fire Water)",
+  "family":          "PRFL",
+  "discipline":      "PR",
+  "area":            "23",
+  "cwp":             "LOOP1",
+  "estimated_hours": 3276.0,
+  "earned_hours":    0.0,
+  "progress_pct":    0.0,
+  "valid_from":      "2024-03-01T00:00:00+00:00",
+  "valid_to":        "2025-02-14T00:00:00+00:00",
+  "tx_time":         "2026-04-30T08:46:20+00:00"
+}
+```
+- `valid_from / valid_to` = planned execution window (synthetic, from DISCIPLINE_TIMELINE for PR discipline: months 5–14)
+- `tx_time` = when this version of the record was committed to the graph (2026-04-30, single snapshot)
+
+**Step nodes** (from PRFL template, real Family_Steps_macro.xlsm):
+```
+Step 1: "Pre-commissioning (Flushing / Blowing)"  order=1  weight=25%
+Step 2: "Pressure Test"                           order=2  weight=25%
+Step 3: "Chemical Cleaning"                       order=3  weight=25%
+Step 4: "QA\QC Certificate"                       order=4  weight=25%
+```
+Each step also carries `valid_from`, `valid_to`, `tx_time` (same temporal axes as the activity).
+
+**Bitemporal rule-change** (synthetic HSE layer):
+```
+Relation:  (hot_work:WorkPermit) -[REQUIRES_CERT]-> (Fire_Watch:Certification)
+           valid_from = 2024-01-01  |  valid_to = null  |  tx_time = 2026-04-30
+
+Relation:  (hot_work:WorkPermit) -[REQUIRES_CERT]-> (Advanced_Fire_Watch:Certification)
+           valid_from = 2024-06-29  |  valid_to = null  |  tx_time = 2026-04-30
+```
+Two edges on the same pair of nodes with different `valid_from` encode the rule change: before 2024-06-29 only Fire Watch was required; after that date Advanced Fire Watch is also required. A **snapshot query at τ < June 2024** returns 1 cert requirement; at **τ ≥ June 2024** returns 2.
+
+**Graph schema summary:**
+```
+(Project)-[:INCLUDES]-> (Activity {valid_from, valid_to, tx_time})
+(Activity)-[:BELONGS_TO]-> (Family)
+(Activity)-[:HAS_STEP {order, weight_pct}]-> (Step {valid_from, valid_to, tx_time})
+(Step)-[:PRECEDES]-> (Step)
+(Step)-[:REQUIRES_PERMIT]-> (WorkPermit)
+(WorkPermit)-[:REQUIRES_CERT {valid_from, valid_to, tx_time}]-> (Certification)
+(Worker)-[:HAS_CERT {valid_from, valid_to, tx_time}]-> (Certification)
+(Worker)-[:ASSIGNED_TO {date}]-> (Step)
+(Worker)-[:PERMIT_DENIED {date, missing_certs}]-> (Step)
+```
 
 ---
 
