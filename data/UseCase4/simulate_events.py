@@ -183,11 +183,11 @@ def generate_events(steps, workers, assignments, delays, worker_index):
         planned   = datetime.fromisoformat(step['valid_from'])
         delay     = delays.get(sid, 0)
         actual    = planned + timedelta(days=delay)
-        after_rc  = planned >= RULE_CHANGE
         permit    = step['permit_type']
         disc      = step.get('discipline', '')
         on_cp     = disc in CRITICAL_DISC
         assign_dt = planned - timedelta(days=random.randint(1, 7))
+        after_rc  = assign_dt >= RULE_CHANGE  # permit check at assignment time, not step start
 
         events['assigned_to'].append({
             'worker_id':        wid,
