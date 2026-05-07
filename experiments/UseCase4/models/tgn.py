@@ -9,10 +9,10 @@ from sklearn.metrics import average_precision_score
 # ── Model classes (identical to nb06 cell 17) ─────────────────────────────────
 
 class MemoryModule(nn.Module):
-    def __init__(self, num_nodes, memory_dim):
+    def __init__(self, num_nodes, memory_dim, message_dim=None):
         super().__init__()
         self.memory = nn.Parameter(torch.zeros(num_nodes, memory_dim), requires_grad=False)
-        self.gru    = nn.GRUCell(memory_dim, memory_dim)
+        self.gru    = nn.GRUCell(message_dim or memory_dim, memory_dim)
 
     def get(self, ids):  return self.memory[ids]
     def reset(self):     nn.init.zeros_(self.memory)
@@ -35,7 +35,7 @@ class MessageFunction(nn.Module):
 class TGN(nn.Module):
     def __init__(self, num_nodes, memory_dim=32, message_dim=32, embed_dim=32, edge_dim=6):
         super().__init__()
-        self.memory  = MemoryModule(num_nodes, memory_dim)
+        self.memory  = MemoryModule(num_nodes, memory_dim, message_dim)
         self.message = MessageFunction(memory_dim, edge_dim, message_dim)
         self.mlp     = nn.Sequential(
             nn.Linear(memory_dim + edge_dim, embed_dim), nn.ReLU(),
