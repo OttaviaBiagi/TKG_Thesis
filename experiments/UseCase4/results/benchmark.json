@@ -1,106 +1,102 @@
 {
   "results": [
     {
-      "model": "DyRep",
+      "model": "TGN",
       "split": "stratified",
-      "dataset": "single",
-      "train_sec": 99.6,
-      "n_train": 20404,
-      "n_test": 4374,
-      "n_pos_test": 68,
+      "dataset": "multi",
+      "train_sec": 450.4,
+      "n_train": 2040499,
+      "n_test": 437251,
+      "n_pos_test": 6521,
       "metrics": {
-        "auc": 0.6437341192863584,
-        "auprc": 0.03649610619647336,
-        "f1": 0.03061683926159388,
-        "precision": 0.015546410608139003,
-        "recall": 1.0,
-        "n_pos": 68,
-        "n_total": 4374,
-        "psi_comm": 1.0,
-        "psi_assoc": 0.14152197539806366
+        "auc": 0.8598834555942094,
+        "auprc": 0.07758055368890135,
+        "f1": 0.09471314698037281,
+        "precision": 0.049863227188973756,
+        "recall": 0.9420334304554516,
+        "n_pos": 6521,
+        "n_total": 437251
       },
       "hparams": {
         "embed_dim": 32,
-        "n_neighbors": 10,
-        "lr": 0.0001,
-        "intensity_reg": 0.001,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
     },
     {
-      "model": "DyRep",
+      "model": "TGN",
       "split": "temporal",
-      "dataset": "single",
-      "train_sec": 120.2,
-      "n_train": 20405,
-      "n_test": 4373,
-      "n_pos_test": 8,
+      "dataset": "multi",
+      "train_sec": 349.7,
+      "n_train": 2040499,
+      "n_test": 437250,
+      "n_pos_test": 933,
       "metrics": {
-        "auc": 0.6597938144329897,
-        "auprc": 0.03529965919969495,
-        "f1": 0.0036521342159324356,
-        "precision": 0.001829407729247656,
+        "auc": 0.9811035240484574,
+        "auprc": 0.09397212112646197,
+        "f1": 0.09752783149532222,
+        "precision": 0.051263736263736266,
         "recall": 1.0,
-        "n_pos": 8,
-        "n_total": 4373,
-        "psi_comm": 1.0987799167633057,
-        "psi_assoc": 0.138466477394104
+        "n_pos": 933,
+        "n_total": 437250
       },
       "hparams": {
         "embed_dim": 32,
-        "n_neighbors": 10,
-        "lr": 0.0001,
-        "intensity_reg": 0.001,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
     },
     {
-      "model": "DyRep",
+      "model": "TGN",
       "split": "6slot",
-      "dataset": "single",
-      "train_sec": 120.3,
-      "n_train": 20405,
-      "n_test": 4373,
-      "n_pos_test": 8,
+      "dataset": "multi",
+      "train_sec": 342.4,
+      "n_train": 2040499,
+      "n_test": 437250,
+      "n_pos_test": 933,
       "metrics": {
         "per_slot": {
           "0": {
-            "auc": 0.7610192837465565,
-            "auprc": 0.5028328611898017,
-            "f1": 0.005479452054794521,
-            "precision": 0.0027472527472527475,
+            "auc": 0.9778477015051572,
+            "auprc": 0.08753866692715964,
+            "f1": 0.0939524838012959,
+            "precision": 0.04929178470254957,
             "recall": 1.0,
-            "n_pos": 2,
-            "n_total": 728
+            "n_pos": 174,
+            "n_total": 72875
           },
           "1": {
-            "auc": 0.33333333333333337,
-            "auprc": 0.015092931759598426,
-            "f1": 0.008207934336525308,
-            "precision": 0.004120879120879121,
+            "auc": 0.9458674206935777,
+            "auprc": 0.09622616815373193,
+            "f1": 0.10029563122741705,
+            "precision": 0.05279538904899136,
             "recall": 1.0,
-            "n_pos": 3,
-            "n_total": 728
+            "n_pos": 458,
+            "n_total": 72875
           },
           "2": {
-            "auc": 0.9733333333333334,
-            "auprc": 0.07200929152148663,
-            "f1": 0.008207934336525308,
-            "precision": 0.004120879120879121,
+            "auc": 0.9747923681351465,
+            "auprc": 0.10540614340295629,
+            "f1": 0.10594494563960213,
+            "precision": 0.05593551538837323,
             "recall": 1.0,
-            "n_pos": 3,
-            "n_total": 728
+            "n_pos": 229,
+            "n_total": 72875
           },
           "3": {
-            "auc": null,
-            "auprc": null,
-            "f1": 0.0,
-            "precision": 0.0,
-            "recall": 0.0,
-            "n_pos": 0,
-            "n_total": 728
+            "auc": 0.9877876293254093,
+            "auprc": 0.06460050265941902,
+            "f1": 0.07298530157121136,
+            "precision": 0.03787480273540242,
+            "recall": 1.0,
+            "n_pos": 72,
+            "n_total": 72875
           },
           "4": {
             "auc": null,
@@ -109,7 +105,7 @@
             "precision": 0.0,
             "recall": 0.0,
             "n_pos": 0,
-            "n_total": 728
+            "n_total": 72875
           },
           "5": {
             "auc": null,
@@ -118,24 +114,70 @@
             "precision": 0.0,
             "recall": 0.0,
             "n_pos": 0,
-            "n_total": 733
+            "n_total": 72875
           }
         },
         "overall": {
-          "auc": 0.6869988545246278,
-          "auprc": 0.16041253908808806,
-          "f1": 0.0036521342159324356,
-          "precision": 0.001829407729247656,
+          "auc": 0.9811035240484576,
+          "auprc": 0.09397212112646197,
+          "f1": 0.09752783149532222,
+          "precision": 0.051263736263736266,
           "recall": 1.0,
-          "n_pos": 8,
-          "n_total": 4373
+          "n_pos": 933,
+          "n_total": 437250
         }
       },
       "hparams": {
         "embed_dim": 32,
-        "n_neighbors": 10,
-        "lr": 0.0001,
-        "intensity_reg": 0.001,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "inductive",
+      "dataset": "multi",
+      "train_sec": 305.0,
+      "n_train": 1829035,
+      "n_test": 437250,
+      "n_pos_test": 933,
+      "metrics": {
+        "overall": {
+          "auc": 0.980587588459467,
+          "auprc": 0.09445741113175726,
+          "f1": 0.09752783149532222,
+          "precision": 0.051263736263736266,
+          "recall": 1.0,
+          "n_pos": 933,
+          "n_total": 437250
+        },
+        "new_nodes": {
+          "auc": 0.9803827338345413,
+          "auprc": 0.08060863411181882,
+          "f1": 0.09302325581395349,
+          "precision": 0.04878048780487805,
+          "recall": 1.0,
+          "n_pos": 90,
+          "n_total": 44516
+        },
+        "seen_nodes": {
+          "auc": 0.9806073306757747,
+          "auprc": 0.09594576877752345,
+          "f1": 0.09803465519246424,
+          "precision": 0.051543870376031795,
+          "recall": 1.0,
+          "n_pos": 843,
+          "n_total": 392734
+        }
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
