@@ -160,13 +160,15 @@ def train(
             sl = slice(start, start + batch_size)
             opt.zero_grad()
             prob, lam = model(src_tr[sl], dst_tr[sl], ef_tr[sl], dt_tr[sl], update=True)
-            bce  = nn.functional.binary_cross_entropy(
-                prob.clamp(1e-6, 1 - 1e-6), y_tr[sl],
-                weight=torch.where(y_tr[sl] == 1, pw.expand_as(y_tr[sl]),
-                                   torch.ones_like(y_tr[sl])))
+            # Guard against NaN/Inf from unstable z embeddings or exploding lam
+            prob = prob.nan_to_num(nan=0.5).clamp(1e-6, 1.0 - 1e-6)
+            lam  = lam.nan_to_num(nan=0.0).clamp(max=50.0)
+            weight = torch.where(y_tr[sl] == 1, pw.expand_as(y_tr[sl]),
+                                  torch.ones_like(y_tr[sl]))
+            bce  = nn.functional.binary_cross_entropy(prob, y_tr[sl], weight=weight)
             loss = bce - intensity_reg * lam.mean()
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             opt.step()
 
         # Val AUPRC
