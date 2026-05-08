@@ -132,10 +132,10 @@ def train(
     scaler,
     device=None,
     n_epochs: int = 30,
-    lr: float = 1e-3,
+    lr: float = 1e-4,
     batch_size: int = 256,
-    intensity_reg: float = 0.01,
-    pos_weight_factor: float = 1.0,
+    intensity_reg: float = 0.001,
+    pos_weight_factor: float = 10.0,
     **_,
 ):
     if device is None:
