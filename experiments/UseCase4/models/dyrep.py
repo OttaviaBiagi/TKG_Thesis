@@ -63,8 +63,10 @@ class DyRepEPC(nn.Module):
                 out.append(torch.zeros(self.embed_dim, device=dev))
                 continue
             nbr_t = torch.tensor(nbrs, dtype=torch.long, device=dev)
-            h     = torch.tanh(self.W_h(self.z[nbr_t]))
-            attn  = torch.softmax(self.s_vec[nbr_t], dim=0).unsqueeze(-1)
+            # nan_to_num guards against infected z values spreading NaN
+            z_nbr = self.z[nbr_t].nan_to_num(0.0)
+            h     = torch.tanh(self.W_h(z_nbr))
+            attn  = torch.softmax(self.s_vec[nbr_t].nan_to_num(0.0), dim=0).unsqueeze(-1)
             out.append(torch.sigmoid(attn * h).max(dim=0)[0])
         return torch.stack(out)
 
@@ -74,9 +76,10 @@ class DyRepEPC(nn.Module):
         h_d = self._aggregate(src_list)
         st  = torch.tensor(src_list, dtype=torch.long, device=dev)
         dt_ = torch.tensor(dst_list, dtype=torch.long, device=dev)
-        z_s, z_d = self.z[st], self.z[dt_]
-        self.z[st]  = torch.sigmoid(self.W_struct(h_s) + self.W_rec(z_s) + self.W_t(dt)).detach()
-        self.z[dt_] = torch.sigmoid(self.W_struct(h_d) + self.W_rec(z_d) + self.W_t(dt)).detach()
+        z_s, z_d = self.z[st].nan_to_num(0.0), self.z[dt_].nan_to_num(0.0)
+        # nan_to_num after sigmoid prevents NaN from exploded weights infecting z
+        self.z[st]  = torch.sigmoid(self.W_struct(h_s) + self.W_rec(z_s) + self.W_t(dt)).nan_to_num(0.5).detach()
+        self.z[dt_] = torch.sigmoid(self.W_struct(h_d) + self.W_rec(z_d) + self.W_t(dt)).nan_to_num(0.5).detach()
         alpha = 0.1
         for u, v in zip(src_list, dst_list):
             if not self._nbrs[u] or self._nbrs[u][-1] != v: self._nbrs[u].append(v)
@@ -168,8 +171,12 @@ def train(
             bce  = nn.functional.binary_cross_entropy(prob, y_tr[sl], weight=weight)
             loss = bce - intensity_reg * lam.mean()
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+            nn.utils.clip_grad_norm_(model.parameters(), 0.1)
             opt.step()
+            # Sanitize weights after step — last defence against NaN cascade
+            with torch.no_grad():
+                for p in model.parameters():
+                    p.data = p.data.nan_to_num(0.0)
 
         # Val AUPRC
         model.eval()
@@ -181,6 +188,7 @@ def train(
                 p, _ = model(src_va[sl], dst_va[sl], ef_va[sl], dt_va[sl], update=False)
                 probs.extend(p.cpu().numpy())
         y_np  = y_va.cpu().numpy()
+        probs  = np.nan_to_num(np.array(probs), nan=0.0)
         auprc = average_precision_score(y_np, probs) if y_np.sum() > 0 else float('nan')
         val_history.append(auprc)
 
