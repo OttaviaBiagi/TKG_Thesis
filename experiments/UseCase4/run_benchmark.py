@@ -59,7 +59,7 @@ DEFAULTS = {
                'lr': 1e-3, 'pos_weight_factor': 10.0,
                'batch_size': 256, 'n_epochs': 30},
     'DyRep': {'embed_dim': 32, 'n_neighbors': 10,
-               'lr': 1e-3, 'intensity_reg': 0.01, 'pos_weight_factor': 10.0,
+               'lr': 1e-4, 'intensity_reg': 0.001, 'pos_weight_factor': 10.0,
                'batch_size': 256, 'n_epochs': 30},
     'TGAT':  {'embed_dim': 64, 'n_heads': 4, 'n_neighbors': 20,
                'lr': 1e-3, 'pos_weight_factor': 15.0,
