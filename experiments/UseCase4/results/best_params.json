@@ -1,0 +1,15 @@
+{
+  "TGN_single": {
+    "model": "TGN",
+    "dataset": "single",
+    "auprc": 0.06626237422487789,
+    "params": {
+      "embed_dim": 128,
+      "memory_dim": 32,
+      "message_dim": 32,
+      "lr": 0.0040215545266902904,
+      "pos_weight_factor": 6.86376609199427,
+      "batch_size": 128
+    }
+  }
+}
