@@ -52,24 +52,42 @@ class TGAT_EPC(nn.Module):
 
     def _embed(self, node_ids: torch.Tensor,
                t_now: torch.Tensor) -> torch.Tensor:
-        z_static = self.node_emb(node_ids)
-        out      = z_static.clone()
+        B   = node_ids.size(0)
+        K   = self.n_neighbors
+        dev = node_ids.device
+
+        z_static = self.node_emb(node_ids)                              # [B, D]
+
+        # Pre-allocate padded history tensors (padding mask: True = ignore)
+        past_n   = torch.zeros(B, K, dtype=torch.long,    device=dev)
+        past_t   = torch.zeros(B, K, dtype=torch.float32, device=dev)
+        pad_mask = torch.ones(B,  K, dtype=torch.bool,    device=dev)
+
         for i, (nid, t) in enumerate(zip(node_ids.tolist(), t_now.tolist())):
             hist = self._history[nid]
             if not hist:
                 continue
-            hist_k = hist[-self.n_neighbors:]
-            past_t = torch.tensor([h[0] for h in hist_k],
-                                  dtype=torch.float32, device=node_ids.device)
-            past_n = torch.tensor([h[1] for h in hist_k],
-                                  dtype=torch.long,    device=node_ids.device)
-            dt     = (t - past_t).clamp(min=0.0)
-            kv     = self.node_emb(past_n) + self.time_enc(dt)
-            q      = (z_static[i] + self.time_enc(
-                         torch.zeros(1, device=node_ids.device)).squeeze(0)
-                     ).unsqueeze(0).unsqueeze(0)
-            attn_out, _ = self.attn(q, kv.unsqueeze(0), kv.unsqueeze(0))
-            out[i]      = attn_out.squeeze(0).squeeze(0)
+            h = hist[-K:]
+            L = len(h)
+            past_t[i, :L] = torch.tensor([x[0] for x in h], dtype=torch.float32)
+            past_n[i, :L] = torch.tensor([x[1] for x in h], dtype=torch.long)
+            pad_mask[i, :L] = False
+
+        if pad_mask.all():          # every node has empty history
+            return z_static
+
+        dt = (t_now.unsqueeze(1) - past_t).clamp(min=0.0)              # [B, K]
+        kv = self.node_emb(past_n) + self.time_enc(dt)                  # [B, K, D]
+
+        q_t = self.time_enc(torch.zeros(B, dtype=torch.float32, device=dev))  # [B, D]
+        q   = (z_static + q_t).unsqueeze(1)                            # [B, 1, D]
+
+        attn_out, _ = self.attn(q, kv, kv, key_padding_mask=pad_mask)  # [B, 1, D]
+        attn_out = attn_out.squeeze(1)                                  # [B, D]
+
+        has_hist = ~pad_mask.all(dim=1)                                 # [B]
+        out = z_static.clone()
+        out[has_hist] = attn_out[has_hist]
         return out
 
     def _update_history(self, src_list, dst_list, t_list):
