@@ -69,10 +69,10 @@ def _suggest_tgat(trial):
     return {
         'embed_dim':          trial.suggest_categorical('embed_dim',   [32, 64, 128]),
         'n_heads':            trial.suggest_categorical('n_heads',     [2, 4, 8]),
-        'n_neighbors':        trial.suggest_categorical('n_neighbors', [10, 20, 30]),
+        'n_neighbors':        trial.suggest_categorical('n_neighbors', [10, 20]),
         'lr':                 trial.suggest_float('lr',  1e-4, 1e-2, log=True),
         'pos_weight_factor':  trial.suggest_float('pos_weight_factor', 5.0, 30.0),
-        'batch_size':         trial.suggest_categorical('batch_size', [256, 512, 1024]),
+        'batch_size':         trial.suggest_categorical('batch_size', [256, 512]),
         'n_epochs':           20,
     }
 
@@ -127,12 +127,37 @@ def tune(model_name: str, dataset: str, n_trials: int = 50,
     scaler = MinMaxScaler()
     scaler.fit(train_df[feat_cols].fillna(0).values)
 
+    # Load existing partial results so callback can update incrementally
+    existing_all = {}
+    if PARAMS_FILE.exists():
+        existing_all = json.load(open(PARAMS_FILE))
+    key = f'{model_name}_{dataset}'
+
+    def _save_callback(study, trial):
+        """Save best params to disk after every completed trial."""
+        if trial.state.name != 'COMPLETE':
+            return
+        try:
+            best_t = study.best_trial
+        except ValueError:
+            return
+        existing_all[key] = {
+            'model':              model_name,
+            'dataset':            dataset,
+            'auprc':              best_t.value,
+            'params':             best_t.params,
+            'n_trials_completed': len([t for t in study.trials
+                                       if t.state.name == 'COMPLETE']),
+        }
+        with open(PARAMS_FILE, 'w') as f:
+            json.dump(existing_all, f, indent=2)
+
     study = optuna.create_study(direction='maximize',
                                  sampler=optuna.samplers.TPESampler(seed=42))
     obj   = _make_objective(model_name, train_df, val_df,
                              feat_cols, scaler, num_nodes, edge_dim)
     study.optimize(obj, n_trials=n_trials, show_progress_bar=True,
-                   catch=(Exception,))
+                   catch=(Exception,), callbacks=[_save_callback])
 
     best = study.best_trial
     print(f'\nBest trial #{best.number}  val_AUPRC={best.value:.4f}')
@@ -143,6 +168,8 @@ def tune(model_name: str, dataset: str, n_trials: int = 50,
         'dataset':  dataset,
         'auprc':    best.value,
         'params':   best.params,
+        'n_trials_completed': len([t for t in study.trials
+                                   if t.state.name == 'COMPLETE']),
     }
     return result
 
