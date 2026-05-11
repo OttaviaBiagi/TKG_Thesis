@@ -1,99 +1,103 @@
 {
   "results": [
     {
-      "model": "TGN",
+      "model": "DyRep",
       "split": "stratified",
       "dataset": "multi",
-      "train_sec": 450.4,
+      "train_sec": 8264.5,
       "n_train": 2040499,
       "n_test": 437251,
       "n_pos_test": 6521,
       "metrics": {
-        "auc": 0.8598834555942094,
-        "auprc": 0.07758055368890135,
-        "f1": 0.09471314698037281,
-        "precision": 0.049863227188973756,
-        "recall": 0.9420334304554516,
+        "auc": 0.5,
+        "auprc": 0.014913630843611565,
+        "f1": 0.029388965504808774,
+        "precision": 0.014913630843611565,
+        "recall": 1.0,
         "n_pos": 6521,
-        "n_total": 437251
+        "n_total": 437251,
+        "psi_comm": 1.0,
+        "psi_assoc": 1.0
       },
       "hparams": {
         "embed_dim": 32,
-        "memory_dim": 32,
-        "message_dim": 32,
-        "lr": 0.001,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
     },
     {
-      "model": "TGN",
+      "model": "DyRep",
       "split": "temporal",
       "dataset": "multi",
-      "train_sec": 349.7,
+      "train_sec": 8109.2,
       "n_train": 2040499,
       "n_test": 437250,
       "n_pos_test": 933,
       "metrics": {
-        "auc": 0.9811035240484574,
-        "auprc": 0.09397212112646197,
-        "f1": 0.09752783149532222,
-        "precision": 0.051263736263736266,
+        "auc": 0.5,
+        "auprc": 0.0021337907375643225,
+        "f1": 0.004258494738499668,
+        "precision": 0.0021337907375643225,
         "recall": 1.0,
         "n_pos": 933,
-        "n_total": 437250
+        "n_total": 437250,
+        "psi_comm": 1.93772554397583,
+        "psi_assoc": 1.0
       },
       "hparams": {
         "embed_dim": 32,
-        "memory_dim": 32,
-        "message_dim": 32,
-        "lr": 0.001,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
     },
     {
-      "model": "TGN",
+      "model": "DyRep",
       "split": "6slot",
       "dataset": "multi",
-      "train_sec": 342.4,
+      "train_sec": 6608.3,
       "n_train": 2040499,
       "n_test": 437250,
       "n_pos_test": 933,
       "metrics": {
         "per_slot": {
           "0": {
-            "auc": 0.9778477015051572,
-            "auprc": 0.08753866692715964,
-            "f1": 0.0939524838012959,
-            "precision": 0.04929178470254957,
+            "auc": 0.5,
+            "auprc": 0.0023876500857632934,
+            "f1": 0.004763925584196909,
+            "precision": 0.0023876500857632934,
             "recall": 1.0,
             "n_pos": 174,
             "n_total": 72875
           },
           "1": {
-            "auc": 0.9458674206935777,
-            "auprc": 0.09622616815373193,
-            "f1": 0.10029563122741705,
-            "precision": 0.05279538904899136,
+            "auc": 0.5,
+            "auprc": 0.006284734133790737,
+            "f1": 0.012490965868026673,
+            "precision": 0.006284734133790737,
             "recall": 1.0,
             "n_pos": 458,
             "n_total": 72875
           },
           "2": {
-            "auc": 0.9747923681351465,
-            "auprc": 0.10540614340295629,
-            "f1": 0.10594494563960213,
-            "precision": 0.05593551538837323,
+            "auc": 0.5,
+            "auprc": 0.0031423670668953687,
+            "f1": 0.006265047056248632,
+            "precision": 0.0031423670668953687,
             "recall": 1.0,
             "n_pos": 229,
             "n_total": 72875
           },
           "3": {
-            "auc": 0.9877876293254093,
-            "auprc": 0.06460050265941902,
-            "f1": 0.07298530157121136,
-            "precision": 0.03787480273540242,
+            "auc": 0.5,
+            "auprc": 0.0009879931389365352,
+            "f1": 0.0019740359439044787,
+            "precision": 0.0009879931389365352,
             "recall": 1.0,
             "n_pos": 72,
             "n_total": 72875
@@ -118,10 +122,10 @@
           }
         },
         "overall": {
-          "auc": 0.9811035240484576,
-          "auprc": 0.09397212112646197,
-          "f1": 0.09752783149532222,
-          "precision": 0.051263736263736266,
+          "auc": 0.5,
+          "auprc": 0.0021337907375643225,
+          "f1": 0.004258494738499668,
+          "precision": 0.0021337907375643225,
           "recall": 1.0,
           "n_pos": 933,
           "n_total": 437250
@@ -129,55 +133,61 @@
       },
       "hparams": {
         "embed_dim": 32,
-        "memory_dim": 32,
-        "message_dim": 32,
-        "lr": 0.001,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
     },
     {
-      "model": "TGN",
+      "model": "DyRep",
       "split": "inductive",
       "dataset": "multi",
-      "train_sec": 305.0,
+      "train_sec": 5950.3,
       "n_train": 1829035,
       "n_test": 437250,
       "n_pos_test": 933,
       "metrics": {
         "overall": {
-          "auc": 0.980587588459467,
-          "auprc": 0.09445741113175726,
-          "f1": 0.09752783149532222,
-          "precision": 0.051263736263736266,
+          "auc": 0.5,
+          "auprc": 0.0021337907375643225,
+          "f1": 0.004258494738499668,
+          "precision": 0.0021337907375643225,
           "recall": 1.0,
           "n_pos": 933,
-          "n_total": 437250
+          "n_total": 437250,
+          "psi_comm": 1.8372048139572144,
+          "psi_assoc": 1.0
         },
         "new_nodes": {
-          "auc": 0.9803827338345413,
-          "auprc": 0.08060863411181882,
-          "f1": 0.09302325581395349,
-          "precision": 0.04878048780487805,
+          "auc": 0.5,
+          "auprc": 0.00202174499056519,
+          "f1": 0.004035331569743981,
+          "precision": 0.00202174499056519,
           "recall": 1.0,
           "n_pos": 90,
-          "n_total": 44516
+          "n_total": 44516,
+          "psi_comm": 1.8372048139572144,
+          "psi_assoc": 1.0
         },
         "seen_nodes": {
-          "auc": 0.9806073306757747,
-          "auprc": 0.09594576877752345,
-          "f1": 0.09803465519246424,
-          "precision": 0.051543870376031795,
+          "auc": 0.5,
+          "auprc": 0.002146491009181787,
+          "f1": 0.004283786908279701,
+          "precision": 0.002146491009181787,
           "recall": 1.0,
           "n_pos": 843,
-          "n_total": 392734
+          "n_total": 392734,
+          "psi_comm": 1.8372048139572144,
+          "psi_assoc": 1.0
         }
       },
       "hparams": {
         "embed_dim": 32,
-        "memory_dim": 32,
-        "message_dim": 32,
-        "lr": 0.001,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
