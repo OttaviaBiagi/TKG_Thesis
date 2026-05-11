@@ -73,21 +73,24 @@ class TGAT_EPC(nn.Module):
             past_n[i, :L] = torch.tensor([x[1] for x in h], dtype=torch.long)
             pad_mask[i, :L] = False
 
-        if pad_mask.all():          # every node has empty history
+        has_hist = ~pad_mask.all(dim=1)                                 # [B]
+        if not has_hist.any():
             return z_static
 
-        dt = (t_now.unsqueeze(1) - past_t).clamp(min=0.0)              # [B, K]
-        kv = self.node_emb(past_n) + self.time_enc(dt)                  # [B, K, D]
+        # Only attend over nodes that actually have history — avoids all-masked
+        # rows feeding into softmax(-inf,...,-inf) = NaN on CUDA.
+        idx = has_hist.nonzero(as_tuple=True)[0]                        # [H]
 
-        q_t = self.time_enc(torch.zeros(B, dtype=torch.float32, device=dev))  # [B, D]
-        q   = (z_static + q_t).unsqueeze(1)                            # [B, 1, D]
+        dt = (t_now[idx].unsqueeze(1) - past_t[idx]).clamp(min=0.0)    # [H, K]
+        kv = self.node_emb(past_n[idx]) + self.time_enc(dt)             # [H, K, D]
 
-        attn_out, _ = self.attn(q, kv, kv, key_padding_mask=pad_mask)  # [B, 1, D]
-        attn_out = attn_out.squeeze(1)                                  # [B, D]
+        q_t = self.time_enc(torch.zeros(len(idx), dtype=torch.float32, device=dev))  # [H, D]
+        q   = (z_static[idx] + q_t).unsqueeze(1)                        # [H, 1, D]
 
-        has_hist = ~pad_mask.all(dim=1)                                 # [B]
+        attn_out, _ = self.attn(q, kv, kv,
+                                key_padding_mask=pad_mask[idx])          # [H, 1, D]
         out = z_static.clone()
-        out[has_hist] = attn_out[has_hist]
+        out[idx] = attn_out.squeeze(1)                                   # [H, D]
         return out
 
     def _update_history(self, src_list, dst_list, t_list):
