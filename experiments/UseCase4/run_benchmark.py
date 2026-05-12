@@ -48,6 +48,17 @@ RESULTS_DIR = Path(__file__).parent / 'results'
 RESULTS_DIR.mkdir(exist_ok=True)
 PARAMS_FILE = RESULTS_DIR / 'best_params.json'
 
+SEED = 42
+
+def _set_seed():
+    """Fix all random seeds before each experiment for reproducibility."""
+    import random
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(SEED)
+
 MODELS   = ('TGN', 'DyRep', 'TGAT')
 SPLITS   = ('stratified', 'temporal', '6slot', 'inductive')
 DATASETS = ('single', 'multi')
@@ -90,6 +101,7 @@ def run_one(model_name: str, split_method: str, df: pd.DataFrame,
     edge_dim  = df.attrs['edge_dim']
     feat_cols = df.attrs.get('feat_cols', FEAT_COLS)
 
+    _set_seed()
     print(f'\n  [{model_name:6s}] [{split_method:10s}] [{dataset_tag:6s}]', end='  ')
 
     # ── Split ────────────────────────────────────────────────────────────────
