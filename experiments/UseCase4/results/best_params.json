@@ -33,11 +33,12 @@
     "params": {
       "embed_dim": 32,
       "n_neighbors": 5,
-      "lr": 1.493656855461762e-05,
+      "lr": 1e-4,
       "intensity_reg": 0.05399484409787434,
       "pos_weight_factor": 20.02787529358022,
       "batch_size": 512
     },
-    "n_trials_completed": 20
+    "n_trials_completed": 20,
+    "note": "lr overridden from tuned 1.49e-5 to default 1e-4: tuned lr under-converges on temporal split (val set has only 8 violations)"
   }
 }

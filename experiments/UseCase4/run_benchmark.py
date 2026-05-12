@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import torch
 from data_loader    import load_single_project, load_multi_project, FEAT_COLS
-from eval_framework import (split_dataset, compute_metrics,
+from eval_framework import (split_dataset, compute_metrics, find_best_threshold,
                              compute_slot_metrics, split_info, save_results)
 from models import MODEL_REGISTRY
 
@@ -50,14 +50,61 @@ PARAMS_FILE = RESULTS_DIR / 'best_params.json'
 
 SEED = 42
 
-def _set_seed():
+def _set_seed(seed: int = SEED):
     """Fix all random seeds before each experiment for reproducibility."""
     import random
-    random.seed(SEED)
-    np.random.seed(SEED)
-    torch.manual_seed(SEED)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(SEED)
+        torch.cuda.manual_seed_all(seed)
+
+def _predict(model_name: str, model, df: pd.DataFrame,
+             feat_cols, scaler, device) -> tuple:
+    """
+    Return (y_true: np.ndarray, y_scores: np.ndarray) for df.
+    Does NOT update model state (update=False / memory reset before scoring).
+    """
+    src = torch.tensor(df['src'].values, dtype=torch.long, device=device)
+    dst = torch.tensor(df['dst'].values, dtype=torch.long, device=device)
+    ef  = torch.tensor(
+        np.nan_to_num(scaler.transform(df[feat_cols].fillna(0).values)).astype(np.float32),
+        dtype=torch.float32, device=device)
+    y   = df['label'].values.astype(int)
+
+    if model_name == 'TGAT':
+        tau_min   = getattr(model, '_tau_min',   0.0)
+        tau_range = getattr(model, '_tau_range', 1.0)
+        t = torch.tensor(
+            ((df['tau'].values.astype(np.float64) - tau_min) / tau_range).astype(np.float32),
+            dtype=torch.float32, device=device)
+        model.eval()
+        with torch.no_grad():
+            scores = np.concatenate([
+                model(src[i:i+256], dst[i:i+256], ef[i:i+256], t[i:i+256],
+                      update=False).cpu().numpy()
+                for i in range(0, len(src), 256)])
+    else:
+        dt_max = getattr(model, '_dt_max', 1.0)
+        ts     = df['tau'].values.astype(np.float64)
+        dt_np  = (np.diff(ts, prepend=ts[0]) / dt_max).astype(np.float32)
+        dt     = torch.tensor(dt_np, dtype=torch.float32, device=device).unsqueeze(1)
+        if model_name == 'DyRep':
+            model.eval(); model.reset()
+            with torch.no_grad():
+                scores = np.concatenate([
+                    model(src[i:i+256], dst[i:i+256], ef[i:i+256], dt[i:i+256],
+                          update=False)[0].cpu().numpy()
+                    for i in range(0, len(src), 256)])
+        else:  # TGN
+            model.eval(); model.tgn.memory.reset()
+            with torch.no_grad():
+                scores = np.concatenate([
+                    model(src[i:i+256], dst[i:i+256], ef[i:i+256], dt[i:i+256],
+                          update=False).cpu().numpy()
+                    for i in range(0, len(src), 256)])
+    return y, scores
+
 
 MODELS   = ('TGN', 'DyRep', 'TGAT')
 SPLITS   = ('stratified', 'temporal', '6slot', 'inductive')
@@ -93,16 +140,16 @@ def _load_best_params(model_name: str, dataset: str) -> dict:
 # ── Single experiment ─────────────────────────────────────────────────────────
 
 def run_one(model_name: str, split_method: str, df: pd.DataFrame,
-            dataset_tag: str) -> dict:
-    """Run one (model, split, dataset) cell and return metrics dict."""
+            dataset_tag: str, seed: int = SEED) -> dict:
+    """Run one (model, split, dataset, seed) cell and return metrics dict."""
     registry  = MODEL_REGISTRY[model_name]
     hparams   = _load_best_params(model_name, dataset_tag)
     num_nodes = df.attrs['num_nodes']
     edge_dim  = df.attrs['edge_dim']
     feat_cols = df.attrs.get('feat_cols', FEAT_COLS)
 
-    _set_seed()
-    print(f'\n  [{model_name:6s}] [{split_method:10s}] [{dataset_tag:6s}]', end='  ')
+    _set_seed(seed)
+    print(f'\n  [{model_name:6s}] [{split_method:10s}] [{dataset_tag:6s}] seed={seed}', end='  ')
 
     # ── Split ────────────────────────────────────────────────────────────────
     train_df, val_df, test_df = split_dataset(
@@ -124,70 +171,35 @@ def run_one(model_name: str, split_method: str, df: pd.DataFrame,
                                   device=DEVICE, **hparams)
     train_sec = time.time() - t0
 
-    # ── Evaluate ──────────────────────────────────────────────────────────────
+    # ── Find optimal threshold on val set (avoids data leakage into test) ────────
+    val_y, val_scores = _predict(model_name, model, val_df, feat_cols, scaler, DEVICE)
+    t_star = find_best_threshold(val_y, val_scores)
+
+    # ── Evaluate on test with optimal threshold ────────────────────────────────
+    test_y, test_scores = _predict(model_name, model, test_df, feat_cols, scaler, DEVICE)
+
     if split_method == '6slot':
-        # Compute predictions over full test set, then slice per slot
-        import importlib
-        mod = importlib.import_module(f'models.{model_name.lower()}')
-        all_src = torch.tensor(test_df['src'].values, dtype=torch.long, device=DEVICE)
-        all_dst = torch.tensor(test_df['dst'].values, dtype=torch.long, device=DEVICE)
-        all_ef  = torch.tensor(
-            np.nan_to_num(scaler.transform(test_df[feat_cols].fillna(0).values)).astype(np.float32),
-            dtype=torch.float32, device=DEVICE)
-
-        if model_name == 'TGAT':
-            tau_min   = getattr(model, '_tau_min',   0.0)
-            tau_range = getattr(model, '_tau_range', 1.0)
-            all_t = torch.tensor(
-                ((test_df['tau'].values.astype(np.float64) - tau_min) / tau_range).astype(np.float32),
-                dtype=torch.float32, device=DEVICE)
-            model.eval()
-            with torch.no_grad():
-                scores = np.concatenate([
-                    model(all_src[i:i+256], all_dst[i:i+256],
-                          all_ef[i:i+256],  all_t[i:i+256],  update=False).cpu().numpy()
-                    for i in range(0, len(all_src), 256)])
-        else:
-            dt_max = getattr(model, '_dt_max', 1.0)
-            ts     = test_df['tau'].values.astype(np.float64)
-            dt_np  = (np.diff(ts, prepend=ts[0]) / dt_max).astype(np.float32)
-            all_dt = torch.tensor(dt_np, dtype=torch.float32, device=DEVICE).unsqueeze(1)
-            if model_name == 'DyRep':
-                model.eval(); model.reset()
-                with torch.no_grad():
-                    scores = np.concatenate([
-                        model(all_src[i:i+256], all_dst[i:i+256],
-                              all_ef[i:i+256],  all_dt[i:i+256], update=False)[0].cpu().numpy()
-                        for i in range(0, len(all_src), 256)])
-            else:  # TGN
-                model.eval(); model.tgn.memory.reset()
-                with torch.no_grad():
-                    scores = np.concatenate([
-                        model(all_src[i:i+256], all_dst[i:i+256],
-                              all_ef[i:i+256],  all_dt[i:i+256], update=False).cpu().numpy()
-                        for i in range(0, len(all_src), 256)])
-
         metrics = compute_slot_metrics(test_df.reset_index(drop=True),
-                                       scores, label_col='label')
+                                       test_scores, label_col='label',
+                                       threshold=t_star)
     elif split_method == 'inductive':
-        metrics_all  = registry['eval'](model, test_df, feat_cols, scaler, device=DEVICE)
-        mask_new     = test_df['is_new_node'] == 1
-        mask_seen    = test_df['is_new_node'] == 0
-        metrics_new  = (registry['eval'](model, test_df[mask_new].reset_index(drop=True),
-                                          feat_cols, scaler, device=DEVICE)
-                        if mask_new.sum() > 0 and test_df[mask_new]['label'].sum() > 0
+        mask_new  = (test_df['is_new_node'] == 1).values
+        mask_seen = (test_df['is_new_node'] == 0).values
+        metrics_new  = (compute_metrics(test_y[mask_new],  test_scores[mask_new],
+                                        threshold=t_star)
+                        if mask_new.sum() > 0 and test_y[mask_new].sum() > 0
                         else {'skipped': True})
-        metrics_seen = (registry['eval'](model, test_df[mask_seen].reset_index(drop=True),
-                                          feat_cols, scaler, device=DEVICE)
-                        if mask_seen.sum() > 0 and test_df[mask_seen]['label'].sum() > 0
+        metrics_seen = (compute_metrics(test_y[mask_seen], test_scores[mask_seen],
+                                        threshold=t_star)
+                        if mask_seen.sum() > 0 and test_y[mask_seen].sum() > 0
                         else {'skipped': True})
         metrics = {
-            'overall':    metrics_all,
+            'overall':    compute_metrics(test_y, test_scores, threshold=t_star),
             'new_nodes':  metrics_new,
             'seen_nodes': metrics_seen,
         }
     else:
-        metrics = registry['eval'](model, test_df, feat_cols, scaler, device=DEVICE)
+        metrics = compute_metrics(test_y, test_scores, threshold=t_star)
 
     # Remove raw scores from saved results (large arrays)
     def _drop_scores(m):
@@ -199,31 +211,29 @@ def run_one(model_name: str, split_method: str, df: pd.DataFrame,
         'model':        model_name,
         'split':        split_method,
         'dataset':      dataset_tag,
+        'seed':         seed,
         'train_sec':    round(train_sec, 1),
         'n_train':      len(train_df),
+        'n_val':        len(val_df),
         'n_test':       len(test_df),
         'n_pos_test':   int(test_df['label'].sum()),
+        'threshold':    round(t_star, 4),
         'metrics':      _drop_scores(metrics),
         'hparams':      {k: v for k, v in hparams.items() if k != 'n_epochs'},
     }
 
     # Print summary line
-    if split_method == '6slot':
+    if split_method in ('6slot', 'inductive'):
         ov = metrics.get('overall', {})
         print(f"AUC={ov.get('auc', float('nan')):.3f}  "
               f"AUPRC={ov.get('auprc', float('nan')):.3f}  "
               f"F1={ov.get('f1', float('nan')):.3f}  "
-              f"({train_sec:.0f}s)")
-    elif split_method == 'inductive':
-        ov = metrics.get('overall', {})
-        print(f"AUC={ov.get('auc', float('nan')):.3f}  "
-              f"AUPRC={ov.get('auprc', float('nan')):.3f}  "
-              f"({train_sec:.0f}s)")
+              f"thr={t_star:.3f}  ({train_sec:.0f}s)")
     else:
         print(f"AUC={metrics.get('auc', float('nan')):.3f}  "
               f"AUPRC={metrics.get('auprc', float('nan')):.3f}  "
               f"F1={metrics.get('f1', float('nan')):.3f}  "
-              f"({train_sec:.0f}s)")
+              f"thr={t_star:.3f}  ({train_sec:.0f}s)")
 
     return result
 
@@ -249,17 +259,19 @@ def _extract_f1(r: dict) -> float:
 
 def _print_matrix(results: list[dict]):
     """Pretty-print the benchmark matrix."""
-    print('\n' + '=' * 80)
-    print(f'{"Model":8s}  {"Split":12s}  {"Dataset":8s}  '
-          f'{"AUC":6s}  {"AUPRC":6s}  {"F1":6s}  {"sec":5s}')
-    print('-' * 80)
+    print('\n' + '=' * 90)
+    print(f'{"Model":8s}  {"Split":12s}  {"Dataset":8s}  {"Seed":5s}  '
+          f'{"AUC":6s}  {"AUPRC":6s}  {"F1":6s}  {"Thr":5s}  {"sec":5s}')
+    print('-' * 90)
     for r in results:
         if r.get('skipped'):
             continue
         print(f'{r["model"]:8s}  {r["split"]:12s}  {r["dataset"]:8s}  '
+              f'{r.get("seed", 42):5d}  '
               f'{_extract_auc(r):6.3f}  {_extract_auprc(r):6.3f}  '
-              f'{_extract_f1(r):6.3f}  {r["train_sec"]:5.0f}')
-    print('=' * 80)
+              f'{_extract_f1(r):6.3f}  {r.get("threshold", 0.5):5.3f}  '
+              f'{r["train_sec"]:5.0f}')
+    print('=' * 90)
 
 
 def _to_csv(results: list[dict]) -> pd.DataFrame:
@@ -268,16 +280,18 @@ def _to_csv(results: list[dict]) -> pd.DataFrame:
         if r.get('skipped'):
             continue
         rows.append({
-            'model':     r['model'],
-            'split':     r['split'],
-            'dataset':   r['dataset'],
-            'auc':       round(_extract_auc(r),   4),
-            'auprc':     round(_extract_auprc(r), 4),
-            'f1':        round(_extract_f1(r),    4),
-            'train_sec': r['train_sec'],
-            'n_train':   r['n_train'],
-            'n_test':    r['n_test'],
-            'n_pos_test':r['n_pos_test'],
+            'model':      r['model'],
+            'split':      r['split'],
+            'dataset':    r['dataset'],
+            'seed':       r.get('seed', 42),
+            'auc':        round(_extract_auc(r),   4),
+            'auprc':      round(_extract_auprc(r), 4),
+            'f1':         round(_extract_f1(r),    4),
+            'threshold':  r.get('threshold', 0.5),
+            'train_sec':  r['train_sec'],
+            'n_train':    r['n_train'],
+            'n_test':     r['n_test'],
+            'n_pos_test': r['n_pos_test'],
         })
     return pd.DataFrame(rows)
 
@@ -285,13 +299,16 @@ def _to_csv(results: list[dict]) -> pd.DataFrame:
 # ── Main runner ───────────────────────────────────────────────────────────────
 
 def run(models=MODELS, splits=SPLITS, datasets=DATASETS,
-        data_dir: str = 'data/UseCase4'):
+        data_dir: str = 'data/UseCase4',
+        seeds: tuple = (SEED,)):
+    seeds = list(seeds)
     print(f'TKG Benchmark Runner')
     print(f'  Device:   {DEVICE}')
     print(f'  Models:   {list(models)}')
     print(f'  Splits:   {list(splits)}')
     print(f'  Datasets: {list(datasets)}')
-    total = len(models) * len(splits) * len(datasets)
+    print(f'  Seeds:    {seeds}')
+    total = len(models) * len(splits) * len(datasets) * len(seeds)
     print(f'  Total experiments: {total}')
 
     # Pre-load datasets
@@ -309,14 +326,15 @@ def run(models=MODELS, splits=SPLITS, datasets=DATASETS,
         df = dfs[ds_name]
         for model_name in models:
             for split_method in splits:
-                done += 1
-                print(f'\n[{done}/{total}]', end='')
-                r = run_one(model_name, split_method, df, ds_name)
-                results.append(r)
+                for seed in seeds:
+                    done += 1
+                    print(f'\n[{done}/{total}]', end='')
+                    r = run_one(model_name, split_method, df, ds_name, seed=seed)
+                    results.append(r)
 
-                # Save incrementally
-                save_results({'results': results},
-                              RESULTS_DIR / 'benchmark.json')
+                    # Save incrementally
+                    save_results({'results': results},
+                                  RESULTS_DIR / 'benchmark.json')
 
     # Final save
     _print_matrix(results)
@@ -342,7 +360,10 @@ if __name__ == '__main__':
     ap.add_argument('--dataset', nargs='+', choices=list(DATASETS),
                     default=list(DATASETS))
     ap.add_argument('--data-dir', default='data/UseCase4')
+    ap.add_argument('--seeds',   nargs='+', type=int, default=[SEED],
+                    help='Random seeds to run (e.g. --seeds 42 43 44 for 3-seed stats)')
     args = ap.parse_args()
 
     run(models=args.model, splits=args.split,
-        datasets=args.dataset, data_dir=args.data_dir)
+        datasets=args.dataset, data_dir=args.data_dir,
+        seeds=tuple(args.seeds))

@@ -34,6 +34,7 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
+    precision_recall_curve,
 )
 
 SPLIT_METHODS = ('stratified', 'temporal', '6slot', 'inductive')
@@ -95,6 +96,26 @@ def split_dataset(
                             random_state, worker_col)
 
 
+def find_best_threshold(y_true: np.ndarray, y_score: np.ndarray) -> float:
+    """
+    Find the decision threshold that maximises F1 on a *validation* set.
+    Apply the returned threshold to the test set (never fit threshold on test).
+
+    Why: at 1.5% positive rate, threshold=0.5 almost never fires, yielding F1≈0.
+    The optimal threshold sits near the score percentile matching the positive rate.
+    """
+    y_true  = np.asarray(y_true, dtype=int)
+    y_score = np.asarray(y_score, dtype=float)
+    if y_true.sum() == 0 or len(np.unique(y_true)) < 2:
+        return 0.5
+    prec, rec, thresholds = precision_recall_curve(y_true, y_score)
+    # prec/rec arrays have len = len(thresholds)+1; drop the last sentinel value
+    denom = prec[:-1] + rec[:-1]
+    with np.errstate(invalid='ignore'):
+        f1s = np.where(denom > 0, 2 * prec[:-1] * rec[:-1] / denom, 0.0)
+    return float(thresholds[np.argmax(f1s)]) if len(thresholds) > 0 else 0.5
+
+
 def compute_metrics(
     y_true: np.ndarray,
     y_score: np.ndarray,
@@ -127,12 +148,14 @@ def compute_slot_metrics(
     test_df: pd.DataFrame,
     y_score: np.ndarray,
     label_col: str = 'label',
+    threshold: float = 0.5,
 ) -> dict:
     """
     Compute per-slot and overall metrics for the '6slot' split.
 
     test_df must have a 'slot' column (produced by split_dataset with method='6slot').
     y_score must be aligned with test_df's index.
+    threshold should be the optimal value found on the validation set.
     """
     if 'slot' not in test_df.columns:
         raise ValueError("test_df must have a 'slot' column (use method='6slot')")
@@ -144,10 +167,11 @@ def compute_slot_metrics(
         mask = (test_df['slot'] == slot).values
         slot_labels = test_df.loc[mask, label_col].values
         slot_scores = y_score[mask]
-        results['per_slot'][int(slot)] = compute_metrics(slot_labels, slot_scores)
+        results['per_slot'][int(slot)] = compute_metrics(slot_labels, slot_scores,
+                                                          threshold=threshold)
 
     results['overall'] = compute_metrics(
-        test_df[label_col].values, y_score)
+        test_df[label_col].values, y_score, threshold=threshold)
     return results
 
 
