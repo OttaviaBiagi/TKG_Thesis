@@ -1,0 +1,50 @@
+{
+  "results": [
+    {
+      "model": "LogisticRegression",
+      "split": "temporal",
+      "dataset": "single",
+      "type": "ml_baseline",
+      "train_sec": 0.03,
+      "n_train": 20405,
+      "n_val": 4372,
+      "n_test": 4373,
+      "n_pos_test": 8,
+      "prevalence": 0.0018,
+      "threshold": 0.508,
+      "auprc_lift": 88.37,
+      "metrics": {
+        "auc": 0.8402061855670103,
+        "auprc": 0.16166531416212565,
+        "f1": 0.023809523809523808,
+        "precision": 0.012135922330097087,
+        "recall": 0.625,
+        "n_pos": 8,
+        "n_total": 4373
+      }
+    },
+    {
+      "model": "RandomForest",
+      "split": "temporal",
+      "dataset": "single",
+      "type": "ml_baseline",
+      "train_sec": 0.34,
+      "n_train": 20405,
+      "n_val": 4372,
+      "n_test": 4373,
+      "n_pos_test": 8,
+      "prevalence": 0.0018,
+      "threshold": 0.6144,
+      "auprc_lift": 87.78,
+      "metrics": {
+        "auc": 0.9778350515463917,
+        "auprc": 0.16057779990439955,
+        "f1": 0.07142857142857142,
+        "precision": 0.05,
+        "recall": 0.125,
+        "n_pos": 8,
+        "n_total": 4373
+      }
+    }
+  ]
+}

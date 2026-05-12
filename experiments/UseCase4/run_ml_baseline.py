@@ -112,11 +112,12 @@ def run(data_dir: str = 'data/UseCase4'):
         results.append(r)
 
     print()
-    print('=== Summary vs TGN temporal (AUC=0.985, AUPRC=0.178, lift=x11.9) ===')
+    # Lift = AUPRC / test-set prevalence. Temporal split: n_pos=8, n_test=4373 → prev=0.0018
+    print('=== Summary vs TGN temporal (AUC=0.985, AUPRC=0.178, lift=x98.9) ===')
     print(f"  {'Model':<22} {'AUC':>6}  {'AUPRC':>6}  {'Lift':>6}  {'F1':>6}")
     print('  ' + '-' * 55)
     tgn_ref = {'model': 'TGN (temporal GNN)', 'auc': 0.985,
-               'auprc': 0.178, 'lift': 11.9, 'f1': 0.084}
+               'auprc': 0.178, 'lift': 98.9, 'f1': 0.084}
     for r in [tgn_ref] + [{'model': r['model'],
                             'auc':   r['metrics']['auc'],
                             'auprc': r['metrics']['auprc'],
