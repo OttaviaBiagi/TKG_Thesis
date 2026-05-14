@@ -313,10 +313,9 @@ def run(models=MODELS, splits=SPLITS, datasets=DATASETS,
 
     # multi_varied results go to their own file to avoid overwriting single/multi results
     datasets_list = list(datasets)
-    only_varied   = datasets_list == ['multi_varied'] or datasets_list == ['multi_varied']
-    out_path      = (RESULTS_DIR / 'benchmark_varied.json'
-                     if set(datasets_list) == {'multi_varied'}
-                     else RESULTS_DIR / 'benchmark.json')
+    out_path = (RESULTS_DIR / 'benchmark_varied.json'
+                if set(datasets_list) == {'multi_varied'}
+                else RESULTS_DIR / 'benchmark.json')
     print(f'  Output:   {out_path.name}')
 
     # Pre-load datasets
