@@ -57,6 +57,35 @@
         "pos_weight_factor": 15.0,
         "batch_size": 512
       }
+    },
+    {
+      "model": "DyRep",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 42,
+      "train_sec": 3547.9,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.5,
+      "metrics": {
+        "auc": 0.5,
+        "auprc": 0.002393370007858827,
+        "f1": 0.004775310929760165,
+        "precision": 0.002393370007858827,
+        "recall": 1.0,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
     }
   ]
 }
