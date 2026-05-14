@@ -38,7 +38,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).parent))
 
 import torch
-from data_loader    import load_single_project, load_multi_project, FEAT_COLS
+from data_loader    import load_single_project, load_multi_project, load_multi_varied, FEAT_COLS
 from eval_framework import (split_dataset, compute_metrics, find_best_threshold,
                              compute_slot_metrics, split_info, save_results)
 from models import MODEL_REGISTRY
@@ -108,7 +108,7 @@ def _predict(model_name: str, model, df: pd.DataFrame,
 
 MODELS   = ('TGN', 'DyRep', 'TGAT')
 SPLITS   = ('stratified', 'temporal', '6slot', 'inductive')
-DATASETS = ('single', 'multi')
+DATASETS = ('single', 'multi', 'multi_varied')
 
 # ── Default hyperparameters (used when no tuning has been run) ────────────────
 
@@ -311,12 +311,24 @@ def run(models=MODELS, splits=SPLITS, datasets=DATASETS,
     total = len(models) * len(splits) * len(datasets) * len(seeds)
     print(f'  Total experiments: {total}')
 
+    # multi_varied results go to their own file to avoid overwriting single/multi results
+    datasets_list = list(datasets)
+    only_varied   = datasets_list == ['multi_varied'] or datasets_list == ['multi_varied']
+    out_path      = (RESULTS_DIR / 'benchmark_varied.json'
+                     if set(datasets_list) == {'multi_varied'}
+                     else RESULTS_DIR / 'benchmark.json')
+    print(f'  Output:   {out_path.name}')
+
     # Pre-load datasets
     dfs = {}
     for ds_name in datasets:
         print(f'\nLoading {ds_name} dataset...')
-        dfs[ds_name] = (load_single_project(data_dir) if ds_name == 'single'
-                        else load_multi_project(data_dir))
+        if ds_name == 'single':
+            dfs[ds_name] = load_single_project(data_dir)
+        elif ds_name == 'multi':
+            dfs[ds_name] = load_multi_project(data_dir)
+        else:
+            dfs[ds_name] = load_multi_varied(data_dir)
 
     results = []
     done    = 0
@@ -333,18 +345,17 @@ def run(models=MODELS, splits=SPLITS, datasets=DATASETS,
                     results.append(r)
 
                     # Save incrementally
-                    save_results({'results': results},
-                                  RESULTS_DIR / 'benchmark.json')
+                    save_results({'results': results}, out_path)
 
     # Final save
     _print_matrix(results)
-    csv_df = _to_csv(results)
-    csv_path = RESULTS_DIR / 'benchmark.csv'
+    csv_df   = _to_csv(results)
+    csv_path = out_path.with_suffix('.csv')
     csv_df.to_csv(csv_path, index=False)
 
     elapsed = time.time() - t_start
     print(f'\nTotal time: {elapsed/60:.1f} min')
-    print(f'Results -> {RESULTS_DIR / "benchmark.json"}')
+    print(f'Results -> {out_path}')
     print(f'CSV     -> {csv_path}')
     return results
 

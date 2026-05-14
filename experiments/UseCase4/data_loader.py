@@ -214,3 +214,55 @@ def load_multi_project(data_dir: str | Path = 'data/UseCase4') -> pd.DataFrame:
           f'violations={int(df["label"].sum()):,} ({100*df["label"].mean():.1f}%)  '
           f'num_nodes={num_nodes}')
     return df
+
+
+def load_multi_varied(data_dir: str | Path = 'data/UseCase4') -> pd.DataFrame:
+    """
+    Load structurally varied multi-project dataset from projects_varied/.
+
+    Each project uses 50–80% of Meram families → different step counts,
+    different discipline mixes, genuinely different graph topologies.
+    Worker/step IDs are prefixed with project_id to keep them globally unique.
+    """
+    data_dir = Path(data_dir)
+    proj_dir = data_dir / 'projects_varied'
+    index    = json.load(open(proj_dir / 'index.json'))
+
+    all_dfs = []
+    for entry in index:
+        p_dir = proj_dir / entry['path']
+        try:
+            ds_p = json.load(open(p_dir / 'dataset.json', encoding='utf-8'))
+            ev_p = json.load(open(p_dir / 'events.json',  encoding='utf-8'))
+        except Exception as exc:
+            print(f'  Warning: skipping {entry["path"]} — {exc}')
+            continue
+
+        pid           = ds_p['project']['project_id']
+        disc_encode   = _build_disc_encode(ds_p['steps'])
+        worker_certs  = _build_worker_certs(ds_p['workers'])
+        step_info     = {s['id']: s for s in ds_p['steps']}
+        denied_set    = {(v['worker_id'], v['step_id']) for v in ev_p['permit_denied']}
+        completed_map = {c['step_id']: c for c in ev_p['completed']}
+
+        rc_str = ds_p['update_events'][0]['valid_from']
+        rc_dt  = datetime.fromisoformat(rc_str)
+        if rc_dt.tzinfo is None:
+            rc_dt = rc_dt.replace(tzinfo=timezone.utc)
+
+        part = _events_to_df(ev_p['assigned_to'], step_info, worker_certs,
+                              denied_set, completed_map, disc_encode, rc_dt)
+        part['worker_id'] = pid + ':' + part['worker_id'].astype(str)
+        part['step_id']   = pid + ':' + part['step_id'].astype(str)
+        all_dfs.append(part)
+
+    df = pd.concat(all_dfs, ignore_index=True).sort_values('tau').reset_index(drop=True)
+    df, num_nodes = _add_node_indices(df)
+    df.attrs['num_nodes'] = num_nodes
+    df.attrs['edge_dim']  = EDGE_DIM
+    df.attrs['feat_cols'] = FEAT_COLS
+
+    print(f'[varied] {len(df):,} events  '
+          f'violations={int(df["label"].sum()):,} ({100*df["label"].mean():.1f}%)  '
+          f'num_nodes={num_nodes}')
+    return df
