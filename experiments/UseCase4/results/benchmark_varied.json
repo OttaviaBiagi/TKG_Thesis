@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "model": "TGN",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 42,
+      "train_sec": 174.7,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.9673,
+      "metrics": {
+        "auc": 0.9830679737702792,
+        "auprc": 0.12221602905144528,
+        "f1": 0.10377358490566038,
+        "precision": 1.0,
+        "recall": 0.05472636815920398,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    }
+  ]
+}
