@@ -1137,6 +1137,93 @@
         "pos_weight_factor": 15.0,
         "batch_size": 512
       }
+    },
+    {
+      "model": "TGN",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 42,
+      "train_sec": 174.7,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.9673,
+      "metrics": {
+        "auc": 0.9830679737702792,
+        "auprc": 0.12221602905144528,
+        "f1": 0.10377358490566038,
+        "precision": 1.0,
+        "recall": 0.05472636815920398,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 42,
+      "train_sec": 2995.5,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.3259,
+      "metrics": {
+        "auc": 0.991994795006004,
+        "auprc": 0.6464655220403824,
+        "f1": 0.6025641025641025,
+        "precision": 0.5280898876404494,
+        "recall": 0.7014925373134329,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "DyRep",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 42,
+      "train_sec": 3547.9,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.5,
+      "metrics": {
+        "auc": 0.5,
+        "auprc": 0.002393370007858827,
+        "f1": 0.004775310929760165,
+        "precision": 0.002393370007858827,
+        "recall": 1.0,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "n_neighbors": 10,
+        "lr": 0.0001,
+        "intensity_reg": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
     }
   ]
 }
