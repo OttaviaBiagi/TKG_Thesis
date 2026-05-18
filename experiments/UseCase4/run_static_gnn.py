@@ -191,7 +191,9 @@ def train_one_depth(n_entities, adj_norm, train_src, train_dst, train_feat, trai
         epoch_loss = 0.0; nb = 0
         for start in range(0, n_train, BATCH_SIZE):
             idx  = perm[start:start + BATCH_SIZE]
-            logits = model(train_src[idx], train_dst[idx], train_feat[idx], node_embs)
+            # Recompute node_embs inside each batch so the autograd graph is fresh
+            node_embs_batch = model.encode(adj_norm)
+            logits = model(train_src[idx], train_dst[idx], train_feat[idx], node_embs_batch)
             loss   = F.binary_cross_entropy_with_logits(logits, train_lbl[idx], pos_weight=pos_w)
             opt.zero_grad(); loss.backward(); opt.step()
             epoch_loss += loss.item(); nb += 1
