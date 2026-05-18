@@ -234,35 +234,60 @@ def run_static_gnn(df, dataset_name: str, device: torch.device) -> dict:
     train_src_np = np.array([w2idx.get(w, 0) for w in train_df['worker_id']])
     train_dst_np = np.array([s2idx.get(s, 0) for s in train_df['step_id']])
 
-    try:
-        adj_norm = build_adj(train_src_np, train_dst_np, n_ent, device)
-    except (RuntimeError, MemoryError) as e:
-        print(f'    [OOM] adjacency too large for n_entities={n_ent:,} — skipping')
-        return None
-
-    train_src, train_dst, train_feat, train_lbl = make_edge_tensors(train_df, w2idx, s2idx, scaler, device)
-    val_src,   val_dst,   val_feat,   val_lbl   = make_edge_tensors(val_df,   w2idx, s2idx, scaler, device)
-    test_src,  test_dst,  test_feat,  test_lbl  = make_edge_tensors(test_df,  w2idx, s2idx, scaler, device)
+    # Try GPU first; fall back to CPU on OOM
+    for compute_device in ([device] if str(device) != 'cpu' else []) + [torch.device('cpu')]:
+        try:
+            adj_norm = build_adj(train_src_np, train_dst_np, n_ent, compute_device)
+            train_src, train_dst, train_feat, train_lbl = make_edge_tensors(
+                train_df, w2idx, s2idx, scaler, compute_device)
+            val_src, val_dst, val_feat, val_lbl = make_edge_tensors(
+                val_df, w2idx, s2idx, scaler, compute_device)
+            test_src, test_dst, test_feat, test_lbl = make_edge_tensors(
+                test_df, w2idx, s2idx, scaler, compute_device)
+            # small probe to catch OOM early
+            _ = torch.zeros(n_ent, HIDDEN, device=compute_device)
+            del _
+            if compute_device != device:
+                print(f'    [fallback] using CPU (GPU OOM for n_entities={n_ent:,})')
+            device = compute_device
+            break
+        except (RuntimeError, MemoryError, torch.cuda.OutOfMemoryError):
+            if compute_device == torch.device('cpu'):
+                print(f'    [OOM] n_entities={n_ent:,} too large even for CPU — skipping')
+                return None
+            print(f'    [GPU OOM] retrying on CPU...')
+            torch.cuda.empty_cache()
 
     val_lbl_np  = val_df['label'].values
     test_lbl_np = test_df['label'].values
 
     # ── Select depth on validation AUPRC ──────────────────────────────────────
-    print(f'    Training with depths={DEPTHS}, selecting best on val AUPRC...')
+    print(f'    Training with depths={DEPTHS} on {device}, selecting best on val AUPRC...')
     t0 = time.time()
 
     best_depth, best_auprc, best_model = 1, -1.0, None
     for d in DEPTHS:
-        model, val_ap = train_one_depth(
-            n_ent, adj_norm,
-            train_src, train_dst, train_feat, train_lbl,
-            val_src,   val_dst,   val_feat,   val_lbl_np,
-            n_layers=d, device=device)
+        try:
+            model, val_ap = train_one_depth(
+                n_ent, adj_norm,
+                train_src, train_dst, train_feat, train_lbl,
+                val_src,   val_dst,   val_feat,   val_lbl_np,
+                n_layers=d, device=device)
+        except (RuntimeError, torch.cuda.OutOfMemoryError) as e:
+            if 'memory' in str(e).lower() or 'alloc' in str(e).lower():
+                print(f'    [OOM] depth={d} failed — skipping this depth')
+                torch.cuda.empty_cache()
+                continue
+            raise
         print(f'    depth={d}  val_AUPRC={val_ap:.4f}')
         if val_ap > best_auprc:
             best_auprc = val_ap
             best_depth = d
             best_model = model
+
+    if best_model is None:
+        print(f'    All depths failed — skipping dataset')
+        return None
 
     train_sec = time.time() - t0
     print(f'    Best depth: {best_depth} (val_AUPRC={best_auprc:.4f})')
