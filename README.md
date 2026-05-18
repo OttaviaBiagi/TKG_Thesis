@@ -84,27 +84,30 @@ Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct 
 
 ### Violation Detection — Temporal Split (primary benchmark)
 
-> Temporal 70/15/15 split · test-set prevalence = 0.18% (8 violations / 4,373 events) · threshold optimised on val set · seed=42
+> Temporal 70/15/15 split · **8 test violations / 4,373 test events** (prevalence=0.18%) · threshold on val · seed=42 · **Note: with only 8 test violations, AUPRC estimates are high-variance. AUC is more reliable here; multi_varied (201 violations) is the statistically stable benchmark.**
 
 | Model | Type | AUC | AUPRC | Lift | F1 | Recall |
 |-------|------|-----|-------|------|----|--------|
-| StaticGNN (depth=1) | Structure-only GNN | 0.759 | **0.498** | **×272.5** | 0.227 | — |
-| **TGN** | Temporal GNN | **0.985** | 0.178 | ×98.9 | 0.084 | **1.000** |
-| Logistic Regression | Feature-only ML | 0.840 | 0.162 | ×88.4 | 0.024 | — |
-| Random Forest | Feature-only ML | 0.978 | 0.161 | ×87.8 | 0.071 | — |
-| TGAT | Temporal GNN | 0.822 | 0.046 | ×25.6 | 0.105 | 0.250 |
+| StaticGNN (d=1) | Structure-only GNN | 0.759 | 0.498† | ×272† | 0.227 | 0.625 |
+| **TGN** | Temporal GNN | **0.985** | **0.178** | **×98.9** | 0.084 | **1.000** |
+| Logistic Regression | Feature-only ML | 0.738 | 0.161 | ×88.4 | 0.024 | 0.625 |
+| Random Forest | Feature-only ML | 0.978 | 0.160 | ×87.8 | 0.071 | 0.125 |
+| TGAT | Temporal GNN | 0.822 | 0.046 | ×25.6 | 0.129 | 0.250 |
 | TNTComplEx | Time-aware KG emb | 0.582 | 0.003 | ×1.6 | 0.004 | — |
-| DyRep | Temporal GNN | 0.416 | 0.002 | ×1.1 | 0.000 | 0.000 |
+| DyRep | Temporal GNN | 0.416 | 0.002 | ×1.1 | 0.004 | 1.000‡ |
 | ComplEx | Static KG emb | 0.440 | 0.002 | ×1.0 | 0.004 | — |
 | Random baseline | — | 0.500 | 0.002 | ×1.0 | — | — |
 
+† StaticGNN single: val_AUPRC=0.068 vs test_AUPRC=0.498 — high-variance artefact of 8 test violations. Multi_varied (201 violations) gives StaticGNN AUPRC=0.353 (×147.6), correctly below TGAT ×309.0.  
+‡ DyRep recall=1.0 is degenerate: val-tuned threshold collapses to near-zero, flagging almost all events as violations (precision=0.002). Confirmed failure.
+
 **Key findings:**
-- **TGN is best for temporal recall** (AUC=0.985, recall=1.0 — catches all 8 violations), driven by its persistent memory module accumulating worker behaviour over time.
-- **StaticGNN test AUPRC=0.498 > TGN**: single-project full-batch GCN achieves high test AUPRC, but val_AUPRC=0.068 reveals this is a small-test-set artefact (8 violations); structural patterns correlate with the specific 8 test violations but the GCN does not generalise across time the same way TGN does. Multi-project evaluation (StaticGNN multi_varied pending) will clarify the generalisation gap.
-- **ComplEx and TNTComplEx = random** (AUPRC≈0.002) at all scales: graph topology alone cannot distinguish violation from compliance; the only difference is temporal (certificate expiry date). This is the core negative result motivating TKG over static KG.
-- **Task is feature-driven**: RF (AUPRC=0.161) nearly matches TGN (AUPRC=0.178) using only 6 edge features. TGN adds +10% AUPRC and recall=1.0 by contextualising features in the temporal workflow graph.
-- **DyRep fails architecturally**: designed for link prediction (balanced classes); its intensity formulation cannot handle 1.5% imbalance. Retained as a negative result.
-- **Threshold matters**: at 0.18% test prevalence, fixed threshold=0.5 gives F1≈0 for all models. Optimal threshold (found on val set) is 0.052 for TGN temporal.
+- **TGN best overall** (AUC=0.985, recall=1.0 — catches all 8 violations). Persistent memory module accumulates worker certificate history over time.
+- **Structural hierarchy confirmed on multi_varied** (201 violations, reliable): ComplEx/TNTComplEx ×1.0 < StaticGNN ×147.6 < TGAT ×309.0. Each layer (static embedding → structure aggregation → temporal dynamics) adds signal.
+- **Features are highly informative**: RF (AUPRC=0.160) nearly matches TGN (AUPRC=0.178) on 6 edge features alone. TGN adds +10% AUPRC and recall=1.0 by contextualising features temporally.
+- **ComplEx and TNTComplEx = random** at every scale: same `(worker, step, relation)` triple can be either compliant or a violation depending solely on the timestamp. Static and time-binned embeddings cannot capture this without persistent memory.
+- **DyRep fails architecturally**: intensity-based link-prediction design; threshold degenerates at 1.5% imbalance.
+- **Threshold matters**: at 0.18% prevalence, threshold=0.5 gives F1≈0 for all models. Val-set optimised threshold is 0.052 for TGN.
 
 ### Multi-Split Summary (TGN)
 
@@ -117,33 +120,41 @@ Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct 
 
 The stratified drop (AUC 0.985→0.833) is expected: it shuffles time, allowing future events in training. The temporal split is the methodologically correct evaluation.
 
-### Multi-Project Generalisation (§6b, notebook 08)
+### Multi-Project Evaluation (§6b, notebook 08)
 
-100 synthetic projects (2,915,000 events, 43,472 violations) sharing the same EPC graph topology (identical step node IDs). Also evaluated on multi_varied (20 distinct project types, 559,877 events). Temporal split, seed=42.
+Three evaluation scenarios with increasing complexity:
 
-| Model | Dataset | AUC | AUPRC | Lift | F1 |
-|-------|---------|-----|-------|------|-----|
-| TGAT | multi | **1.000** | **0.955** | **×454.8** | 0.905 |
-| TGAT | multi_varied | 0.992 | 0.646 | ×309.0 | 0.603 |
-| TGN | multi | 0.981 | 0.094 | ×44.8 | 0.098 |
-| DyRep | multi | 0.500 | 0.002 | ×1.0 | 0.004 |
-| TGN | single | 0.985 | 0.178 | ×98.9 | 0.084 |
-| TGAT | single | 0.822 | 0.046 | ×25.6 | 0.129 |
-| LR (diagnostic) | multi | 0.682 | 0.072 | ×4.7 | — |
-| ComplEx | multi | 0.503 | 0.002 | ×1.0 | 0.005 |
-| TNTComplEx | multi | 0.507 | 0.002 | ×1.0 | 0.004 |
-| ComplEx | multi_varied | 0.521 | 0.002 | ×1.0 | 0.005 |
-| TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | 0.005 |
-| StaticGNN | multi | — | — | — | — | infeasible: 2.9M nodes, full-batch GCN OOM+60h CPU |
-| StaticGNN | multi_varied | pending | — | — | — | |
+1. **Single-project** (29K events) — primary result, full baseline suite.
+2. **Homogeneous multi** (100 instances × same EPC process structure, 2.9M events) — statistically stable AUPRC from 933 test violations; validates computational scalability. Each project has its own scoped node IDs (`P{proj}:worker`, `P{proj}:step`): no cross-project node sharing occurs at the model level.
+3. **Varied-topology multi** (30 structurally diverse EPC project families, 560K events) — cross-project generalisation test. Step codes vary across families; 201 test violations give reliable AUPRC estimates.
 
-**Architectural finding — TGAT stateless attention vs TGN stateful memory on shared topology:**
+Temporal split, seed=42.
 
-All 100 projects share the same step node IDs (identical EPC permit graph). TGAT, which recomputes attention from scratch at every event without maintaining persistent memory, accumulates the signal that "step X is high-risk" cleanly across 100 independent training projects, reaching AUPRC=0.955. TGN maintains a persistent memory state per node; with 100 overlapping projects all writing to the same node memories, the memory suffers interference and AUPRC degrades from 0.178 (single) to 0.094 (multi).
+**Primary generalisation result — multi_varied (30 diverse EPC families, 201 test violations):**
 
-The LR diagnostic (AUPRC=0.072 with the same 6 features) confirms that TGAT's improvement is not explained by feature artifacts such as `cert_expires_soon`. The performance gap is structural: TGAT learns node-level permit patterns from the shared EPC graph topology.
+| Model | Dataset | AUC | AUPRC | Lift | F1 | Recall |
+|-------|---------|-----|-------|------|----|--------|
+| **TGAT** | multi_varied | **0.992** | **0.646** | **×309.0** | 0.603 | — |
+| StaticGNN (d=2) | multi_varied | 0.930 | 0.353 | ×147.6 | 0.091 | 0.517 |
+| ComplEx | multi_varied | 0.521 | 0.002 | ×1.0 | 0.005 | — |
+| TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | 0.005 | — |
 
-**Scope note:** The multi-project dataset is a scalability test (same graph, more data), not a cross-project generalisation test. All 100 instances share the same EPC step structure, so the violation label distribution is nearly identical across projects (1.49% ± 0.07%).
+**Scalability test — homogeneous multi (100 identical instances, 933 test violations):**
+
+| Model | Dataset | AUC | AUPRC | Lift | F1 | Note |
+|-------|---------|-----|-------|------|----|------|
+| TGAT | multi | 1.000 | 0.955 | ×454.8 | 0.905 | 933 test violations; no cross-project node sharing |
+| TGN | multi | 0.981 | 0.094 | ×44.8 | 0.098 | Memory interference with repeated event structure |
+| DyRep | multi | 0.500 | 0.002 | ×1.0 | 0.004 | Fails at scale (same as single) |
+| LR (diagnostic) | multi | 0.682 | 0.072 | ×4.7 | — | Features less predictive at scale |
+| ComplEx | multi | 0.503 | 0.002 | ×1.0 | 0.005 | Random |
+| StaticGNN | multi | — | — | — | — | Infeasible: 2.9M nodes, GPU OOM, CPU ~60h |
+
+**Key findings:**
+- **TGAT ×309 on multi_varied** is the primary cross-project result (30 diverse EPC families, reliable 201-violation test set). Confirms temporal attention generalises to structurally new projects.
+- **StaticGNN ×147.6 on multi_varied** shows graph structure alone provides significant signal, but temporal dynamics double the lift (×147.6 → ×309.0). This gap quantifies the value of temporal context.
+- **Scalability (homogeneous multi)**: TGAT reaches AUPRC=0.955 on 100 independent single-project instances (933 test violations). TGN degrades to 0.094 because repeated event structures cause memory interference in the stateful architecture. LR diagnostic (0.072) rules out feature artefacts.
+- **Design note**: in the homogeneous multi dataset, node IDs are scoped per project (`P{proj}:step`, `P{proj}:worker`), so models do not share representations across projects. The high AUPRC reflects reliable estimation from 933 test violations, not cross-project learning.
 
 ### Label Sanity Analysis (§2b, notebook 08)
 
