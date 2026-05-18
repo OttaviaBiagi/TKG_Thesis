@@ -14,7 +14,7 @@
 | **UC1** | Synthetic turbine anomaly detection | 1.3M sensor readings, 6.8% anomaly rate | IsolationForest + TGN | Threshold-tuned IF baseline; TGN on sensor TKG |
 | **UC2** | Oil well anomaly detection (3W) | Petrobras 3W dataset, 10 anomaly classes | TGN → RF/XGBoost | Improved recall per anomaly class with class-weighted trees |
 | **UC3** | EPC delay causal analysis | Synthetic EPC (60 activities, 5 causal chains) | T-Logic symbolic rules | R1+R2+R3 rules validated against ground truth causal chains |
-| **UC4** | EPC compliance & violation detection | Real TR Meram (29,150 steps, 449 violations) | TGN / TGAT / DyRep + baselines | TGN AUC=0.985 lift=×98.9 (single); TGAT lift=×454.8 (multi, shared topology) |
+| **UC4** | EPC compliance & violation detection | Real TR Meram (29,150 steps, 449 violations) | TGN / TGAT / DyRep + static baselines | TGN AUC=0.985 lift=×98.9 (single); TGAT lift=×454.8 (multi); ComplEx/TNTComplEx=random; StaticGNN AUPRC=0.498 single |
 
 ---
 
@@ -52,13 +52,17 @@ TKG_Thesis/
 │   ├── data_loader.py          # load_single_project / load_multi_project
 │   ├── run_benchmark.py        # 3 models × 4 splits × 2 datasets × N seeds
 │   ├── run_ml_baseline.py      # LR + RF feature-only baselines
+│   ├── run_static_baseline.py  # ComplEx + TNTComplEx static KG baselines
+│   ├── run_static_gnn.py       # Static GCN baseline (structure, no time)
 │   ├── tune_hyperparams.py     # Optuna TPE (50 trials, val-AUPRC objective)
 │   ├── models/                 # TGN, TGAT, DyRep implementations
 │   └── results/
 │       ├── benchmark.json      # Full results (all metrics, per-slot detail)
 │       ├── benchmark.csv       # Summary table
 │       ├── best_params.json    # Tuned hyperparameters
-│       └── ml_baseline.json    # LR + RF results
+│       ├── ml_baseline.json    # LR + RF results
+│       ├── static_baseline.json # ComplEx + TNTComplEx results (all 3 scales)
+│       └── static_gnn.json     # StaticGNN results
 │
 └── src/                    # Shared utilities (Neo4j loader, model scripts)
 ```
@@ -69,12 +73,12 @@ TKG_Thesis/
 
 ### Dataset
 
-| | Single project | Multi project |
-|--|--|--|
-| Events (edges) | 29,150 | 2,915,000 |
-| Violations | 449 (1.54%) | 43,472 (1.49%) |
-| Unique nodes | 29,200 | 2,919,840 |
-| Edge features | 6 | 6 |
+| | Single project | Multi project (×100) | Multi-varied (×20 types) |
+|--|--|--|--|
+| Events (edges) | 29,150 | 2,915,000 | 559,877 |
+| Violations | 449 (1.54%) | 43,472 (1.49%) | 8,276 (1.48%) |
+| Unique nodes | 29,200 | 2,919,840 | 561,317 |
+| Edge features | 6 | 6 | 6 |
 
 Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct · cert_expires_soon`
 
@@ -84,16 +88,21 @@ Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct 
 
 | Model | Type | AUC | AUPRC | Lift | F1 | Recall |
 |-------|------|-----|-------|------|----|--------|
-| **TGN** | Temporal GNN | **0.985** | **0.178** | **×98.9** | 0.084 | **1.000** |
-| Random Forest | Feature-only ML | 0.978 | 0.161 | ×87.8 | 0.071 | — |
+| StaticGNN (depth=1) | Structure-only GNN | 0.759 | **0.498** | **×272.5** | 0.227 | — |
+| **TGN** | Temporal GNN | **0.985** | 0.178 | ×98.9 | 0.084 | **1.000** |
 | Logistic Regression | Feature-only ML | 0.840 | 0.162 | ×88.4 | 0.024 | — |
+| Random Forest | Feature-only ML | 0.978 | 0.161 | ×87.8 | 0.071 | — |
 | TGAT | Temporal GNN | 0.822 | 0.046 | ×25.6 | 0.105 | 0.250 |
+| TNTComplEx | Time-aware KG emb | 0.582 | 0.003 | ×1.6 | 0.004 | — |
 | DyRep | Temporal GNN | 0.416 | 0.002 | ×1.1 | 0.000 | 0.000 |
+| ComplEx | Static KG emb | 0.440 | 0.002 | ×1.0 | 0.004 | — |
 | Random baseline | — | 0.500 | 0.002 | ×1.0 | — | — |
 
 **Key findings:**
-- **TGN is best** (AUC=0.985, recall=1.0 — catches all 8 violations), driven by its persistent memory module accumulating worker behaviour over time.
-- **Task is feature-driven**: RF (AUPRC=0.161) nearly matches TGN (AUPRC=0.178) using only the 6 edge features. TGN adds +10% AUPRC and recall=1.0 by contextualising features in the temporal workflow graph.
+- **TGN is best for temporal recall** (AUC=0.985, recall=1.0 — catches all 8 violations), driven by its persistent memory module accumulating worker behaviour over time.
+- **StaticGNN test AUPRC=0.498 > TGN**: single-project full-batch GCN achieves high test AUPRC, but val_AUPRC=0.068 reveals this is a small-test-set artefact (8 violations); structural patterns correlate with the specific 8 test violations but the GCN does not generalise across time the same way TGN does. Multi-project evaluation (StaticGNN multi_varied pending) will clarify the generalisation gap.
+- **ComplEx and TNTComplEx = random** (AUPRC≈0.002) at all scales: graph topology alone cannot distinguish violation from compliance; the only difference is temporal (certificate expiry date). This is the core negative result motivating TKG over static KG.
+- **Task is feature-driven**: RF (AUPRC=0.161) nearly matches TGN (AUPRC=0.178) using only 6 edge features. TGN adds +10% AUPRC and recall=1.0 by contextualising features in the temporal workflow graph.
 - **DyRep fails architecturally**: designed for link prediction (balanced classes); its intensity formulation cannot handle 1.5% imbalance. Retained as a negative result.
 - **Threshold matters**: at 0.18% test prevalence, fixed threshold=0.5 gives F1≈0 for all models. Optimal threshold (found on val set) is 0.052 for TGN temporal.
 
@@ -110,16 +119,23 @@ The stratified drop (AUC 0.985→0.833) is expected: it shuffles time, allowing 
 
 ### Multi-Project Generalisation (§6b, notebook 08)
 
-100 synthetic projects (2,915,000 events, 43,472 violations) sharing the same EPC graph topology (identical step node IDs). Temporal split, seed=42.
+100 synthetic projects (2,915,000 events, 43,472 violations) sharing the same EPC graph topology (identical step node IDs). Also evaluated on multi_varied (20 distinct project types, 559,877 events). Temporal split, seed=42.
 
 | Model | Dataset | AUC | AUPRC | Lift | F1 |
 |-------|---------|-----|-------|------|-----|
 | TGAT | multi | **1.000** | **0.955** | **×454.8** | 0.905 |
+| TGAT | multi_varied | 0.992 | 0.646 | ×309.0 | 0.603 |
 | TGN | multi | 0.981 | 0.094 | ×44.8 | 0.098 |
 | DyRep | multi | 0.500 | 0.002 | ×1.0 | 0.004 |
 | TGN | single | 0.985 | 0.178 | ×98.9 | 0.084 |
 | TGAT | single | 0.822 | 0.046 | ×25.6 | 0.129 |
 | LR (diagnostic) | multi | 0.682 | 0.072 | ×4.7 | — |
+| ComplEx | multi | 0.503 | 0.002 | ×1.0 | 0.005 |
+| TNTComplEx | multi | 0.507 | 0.002 | ×1.0 | 0.004 |
+| ComplEx | multi_varied | 0.521 | 0.002 | ×1.0 | 0.005 |
+| TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | 0.005 |
+| StaticGNN | multi | — | — | — | — | infeasible: 2.9M nodes, full-batch GCN OOM+60h CPU |
+| StaticGNN | multi_varied | pending | — | — | — | |
 
 **Architectural finding — TGAT stateless attention vs TGN stateful memory on shared topology:**
 
@@ -141,6 +157,24 @@ Labels from `epc_events.json['permit_denied']` — real operational EPC permit d
 | T4 Label consistency | All (worker, step) pairs unique → 100% consistent | ✓ PASS |
 | T5 Linear separability (LR 5-fold CV) | AUC=0.654 ± 0.013 >> 0.5 random | ✓ PASS |
 
+### Static KG Baselines — Violation Detection (§5b–§5c, notebook 08)
+
+Same protocol as TGN/TGAT/DyRep: temporal 70/15/15 split, val-threshold, AUC/AUPRC on test.
+
+| Model | Dataset | AUC | AUPRC | Lift | Key point |
+|-------|---------|-----|-------|------|-----------|
+| ComplEx | single | 0.440 | 0.002 | ×1.0 | Static embeddings — no timestamp |
+| ComplEx | multi | 0.503 | 0.002 | ×1.0 | Same: random at scale |
+| ComplEx | multi_varied | 0.521 | 0.002 | ×1.0 | Same: random at scale |
+| TNTComplEx | single | 0.582 | 0.003 | ×1.6 | Time embedding — marginal gain |
+| TNTComplEx | multi | 0.507 | 0.002 | ×1.0 | No persistent memory → random at scale |
+| TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | Same |
+| StaticGNN | single | 0.759 | 0.498 | ×272.5 | Structural patterns; val_AUPRC=0.068 (small test set) |
+| StaticGNN | multi | — | — | — | Infeasible: 2.9M nodes GPU OOM, CPU ~60h |
+| StaticGNN | multi_varied | pending | — | — | Running |
+
+**Core finding**: ComplEx and TNTComplEx = random at every scale. The same `(worker, step, relation)` triple can be either compliant or a violation depending only on the timestamp (certificate expiry). Static and time-binned embeddings cannot capture this signal without persistent memory.
+
 ### TNTComplEx — Link Prediction (notebook 06)
 
 | Relation | MRR | H@10 | Notes |
@@ -150,7 +184,7 @@ Labels from `epc_events.json['permit_denied']` — real operational EPC permit d
 
 ### T-Logic Symbolic Rules (notebook 07)
 
-**P=1.0, R=1.0, F1=1.0** on post-rule-change test (274 violations). Rules:
+**P=0.875, R=0.875, F1=0.875** on post-rule-change test (274 violations). Rules:
 - R1: `DELIVERED_LATE(PO, Activity, t)` → `IS_DELAYED(Activity)`
 - R2: `IMPACTS_ACTIVITY(Event, Activity, t)` → `IS_DELAYED(Activity)`
 - R3: `APPROVED_LATE(Doc, Activity, t)` → `IS_DELAYED(Activity)`
@@ -190,6 +224,12 @@ python experiments/UseCase4/run_benchmark.py --model TGN --split temporal --data
 # ML feature-only baselines (LR + RF)
 python experiments/UseCase4/run_ml_baseline.py
 
+# Static KG baselines (ComplEx + TNTComplEx, all 3 datasets)
+python experiments/UseCase4/run_static_baseline.py --model all --dataset all
+
+# Static GNN baseline (single project, ~2 min on GPU)
+python experiments/UseCase4/run_static_gnn.py --dataset single
+
 # Hyperparameter tuning (50 trials per model, ~3h)
 python experiments/UseCase4/tune_hyperparams.py
 
@@ -225,7 +265,7 @@ jupyter lab   # then open notebooks/UseCase4/08_model_benchmark_final.ipynb
 | 9 | Reproducibility | ✅ Fixed seed=42; multi-seed via `--seeds 42 43 44` |
 | 10 | Multi-project generalisation | ✅ Completed — TGAT×454.8 lift; architectural finding documented |
 | 11 | Expert label validation | ⏳ Future work |
-| 12 | Static KG baseline (TransE) | ⏳ Future work |
+| 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (single×272.5; multi infeasible; multi_varied pending) |
 
 ---
 
@@ -234,6 +274,8 @@ jupyter lab   # then open notebooks/UseCase4/08_model_benchmark_final.ipynb
 - Xu et al. (2020) — Inductive Representation Learning on Temporal Graphs (TGAT) · ICLR
 - Rossi et al. (2020) — Temporal Graph Networks (TGN) · NeurIPS
 - Zuo et al. (2018) — Embedding Temporal Network via Neighborhood Formation (DyRep)
+- Trouillon et al. (2016) — Complex Embeddings for Simple Link Prediction (ComplEx) · ICML
+- Kipf & Welling (2017) — Semi-Supervised Classification with Graph Convolutional Networks (GCN) · ICLR
 - Lacroix et al. (2020) — Tensor Decompositions for Knowledge Base Completion (TNTComplEx)
 - Liu et al. (2022) — T-Logic: Temporal Logical Rules for Explainable Link Forecasting
 - Vargas et al. (2019) — 3W Dataset · Journal of Petroleum Science and Engineering
