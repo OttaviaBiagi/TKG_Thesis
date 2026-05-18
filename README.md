@@ -1,20 +1,18 @@
-# TKG Thesis — Temporal Knowledge Graphs for Industrial Monitoring
+# EPC Compliance Monitoring with Temporal Knowledge Graphs
 
 **MSc Thesis** · Tecnicas Reunidas / Universidad Politécnica de Madrid & Politecnico di Milano  
-**Author:** Ottavia Biagi
+**Author:** Ottavia Biagi  
+**Industry partner:** Tecnicas Reunidas S.A. — Meram Refinery Expansion (Turkey)
 
-> Design and evaluation of Temporal Knowledge Graph (TKG) systems across four industrial domains: anomaly detection, causal analysis, and EPC project compliance.
+> This thesis designs, implements, and evaluates a Temporal Knowledge Graph (TKG) framework for automated EPC (Engineering, Procurement & Construction) permit compliance monitoring, using real project activity data from Tecnicas Reunidas. The system detects work-permit violations — events where a worker is assigned to a step without valid certification — under realistic temporal and structural conditions.
 
 ---
 
-## Use Cases at a Glance
+## Thesis at a Glance
 
-| # | Domain | Data | Approach | Main result |
-|---|--------|------|----------|-------------|
-| **UC1** | Synthetic turbine anomaly detection | 1.3M sensor readings, 6.8% anomaly rate | IsolationForest + TGN | Threshold-tuned IF baseline; TGN on sensor TKG |
-| **UC2** | Oil well anomaly detection (3W) | Petrobras 3W dataset, 10 anomaly classes | TGN → RF/XGBoost | Improved recall per anomaly class with class-weighted trees |
-| **UC3** | EPC delay causal analysis | Synthetic EPC (60 activities, 5 causal chains) | T-Logic symbolic rules | R1+R2+R3 rules validated against ground truth causal chains |
-| **UC4** | EPC compliance & violation detection | Real TR Meram (29,150 steps, 449 violations) | TGN / TGAT / DyRep + static baselines | TGN AUC=0.985 lift=×98.9 (single); TGAT lift=×454.8 (multi); ComplEx/TNTComplEx=random; StaticGNN AUPRC=0.498 single |
+| Domain | Industry data | Scale | Approach | Best result |
+|--------|--------------|-------|----------|-------------|
+| EPC permit compliance & violation detection | ✅ Real TR Meram activity/step/worker structure; real permit-denial records | 29K–560K events; 8–201 test violations | TGN / TGAT / DyRep / StaticGNN / ComplEx / TNTComplEx + ML baselines | **TGN AUC=0.985, lift=×98.9** (single); **TGAT lift=×309.0** (multi_varied, 30 diverse EPC families); ComplEx/TNTComplEx=random; StaticGNN ×147.6 (multi_varied) |
 
 ---
 
@@ -22,58 +20,74 @@
 
 ```
 TKG_Thesis/
-├── data/
-│   ├── UseCase2/           # 3W Dataset (Petrobras) — oil well sensor data
-│   └── UseCase4/           # EPC TKG — TR Meram Refinery Expansion
-│       ├── epc_dataset_real.json       # Generated TKG (real TR activity data)
-│       ├── epc_events.json             # Simulated event stream (ASSIGNED_TO, PERMIT_DENIED)
-│       ├── generate_epc_dataset.py     # Dataset generator
-│       ├── import_graph_real.py        # Neo4j import script
-│       ├── projects/                   # 100 synthetic project instances (proj_000–proj_099)
-│       └── queries/                    # Cypher queries (temporal compliance, critical path)
 │
-├── notebooks/
-│   ├── UseCase1/           # 01 generate+explore · 02 anomaly detection · 03 Neo4j queries
-│   ├── UseCase2/           # 01 explore · 02 preprocessing · 03–04 TGN · 05–06 RF/XGBoost
-│   ├── UseCase3/           # 01 explore · 02 TKG build · 03 T-Logic causal rules
-│   └── UseCase4/
-│       ├── 01_explore_epc.ipynb            # Dataset exploration + Neo4j verification
-│       ├── 02_temporal_queries.ipynb       # Bitemporal compliance queries
-│       ├── 03_critical_path.ipynb          # Critical path & bottleneck analysis
-│       ├── 04_dynamic_tkg.ipynb            # Event stream analysis
-│       ├── 05_tgn_epc.ipynb                # TGN training (early prototype)
-│       ├── 06_tkg_models.ipynb             # TNTComplEx + RF/XGBoost baselines
-│       ├── 07_four_layer_tlogic.ipynb      # T-Logic symbolic rules + cascade risk
-│       └── 08_model_benchmark_final.ipynb  # ★ Full benchmark: TGN/TGAT/DyRep × 4 splits
-│                                           #   + label sanity analysis + ML baselines
+├── data/epc_tkg/                       # ★ TR Meram EPC dataset (thesis data)
+│   (folder on disk: data/UseCase4/)
+│   ├── epc_dataset_real.json           # TKG built from real TR activity/step/worker data
+│   ├── epc_events.json                 # Real permit-denial event records (labels)
+│   ├── generate_epc_dataset.py         # Dataset generator (real TR PCS → TKG)
+│   ├── import_graph_real.py            # Neo4j import (requires bolt://localhost:7687)
+│   ├── projects/                       # Multi-project instances (proj_000–proj_099, V000–V029)
+│   └── queries/                        # Cypher: temporal compliance, critical path
 │
-├── experiments/UseCase4/
-│   ├── eval_framework.py       # split_dataset · compute_metrics · find_best_threshold
-│   ├── data_loader.py          # load_single_project / load_multi_project
-│   ├── run_benchmark.py        # 3 models × 4 splits × 2 datasets × N seeds
-│   ├── run_ml_baseline.py      # LR + RF feature-only baselines
-│   ├── run_static_baseline.py  # ComplEx + TNTComplEx static KG baselines
-│   ├── run_static_gnn.py       # Static GCN baseline (structure, no time)
-│   ├── tune_hyperparams.py     # Optuna TPE (50 trials, val-AUPRC objective)
-│   ├── models/                 # TGN, TGAT, DyRep implementations
+├── notebooks/epc_compliance/           # ★ Thesis analysis notebooks
+│   (folder on disk: notebooks/UseCase4/)
+│   ├── 01_explore_epc.ipynb            # Dataset exploration + Neo4j verification
+│   ├── 02_temporal_queries.ipynb       # Bitemporal compliance queries
+│   ├── 03_critical_path.ipynb          # Critical path & bottleneck analysis
+│   ├── 04_dynamic_tkg.ipynb            # Event stream analysis
+│   ├── 05_tgn_epc.ipynb               # TGN prototype (early exploration)
+│   ├── 06_tkg_models.ipynb             # TNTComplEx + RF/XGBoost baselines
+│   ├── 07_four_layer_tlogic.ipynb      # T-Logic symbolic rules + cascade risk
+│   ├── 08_model_benchmark_final.ipynb  # ★ MAIN: full benchmark TGN/TGAT/DyRep ×4 splits
+│   │                                   #   + label sanity (T1–T5) + all static baselines
+│   └── archive_synth_v1/              # 📦 Archive: synthetic-data prototype (pre-real-data)
+│                                       #   Not part of thesis — kept for development history
+│
+├── experiments/epc_compliance/         # ★ Thesis training & evaluation pipeline
+│   (folder on disk: experiments/UseCase4/)
+│   ├── eval_framework.py               # split_dataset · compute_metrics · find_best_threshold
+│   ├── data_loader.py                  # load_single_project / load_multi_project
+│   ├── run_benchmark.py                # TGN/TGAT/DyRep × 4 splits × N seeds
+│   ├── run_ml_baseline.py              # LR + RF feature-only baselines
+│   ├── run_static_baseline.py          # ComplEx + TNTComplEx (all 3 scales)
+│   ├── run_static_gnn.py               # Static GCN (structure-only, no time)
+│   ├── tune_hyperparams.py             # Optuna TPE, 50 trials, val-AUPRC objective
+│   ├── models/                         # TGN, TGAT, DyRep implementations
 │   └── results/
-│       ├── benchmark.json      # Full results (all metrics, per-slot detail)
-│       ├── benchmark.csv       # Summary table
-│       ├── best_params.json    # Tuned hyperparameters
-│       ├── ml_baseline.json    # LR + RF results
-│       ├── static_baseline.json # ComplEx + TNTComplEx results (all 3 scales)
-│       └── static_gnn.json     # StaticGNN results
+│       ├── benchmark.json              # All TGN/TGAT/DyRep results (metrics + per-slot)
+│       ├── ml_baseline.json            # LR + RF results
+│       ├── static_baseline.json        # ComplEx + TNTComplEx (all 3 scales)
+│       └── static_gnn.json             # StaticGNN results (single + multi_varied)
 │
-└── src/                    # Shared utilities (Neo4j loader, model scripts)
+├── tests/                              # Data validation (pytest) — run once before experiments
+│   ├── test_real_data.py               # ✅ UC4: 22 quality tests on TR Meram data (T1–T5)
+│   └── test_3w.py                      # ⚠️  Legacy UC2 leftover (Petrobras 3W) — not used
+│
+├── scripts/                            # 🗄️  Development utilities (not thesis pipeline)
+│   ├── delay_analysis.py               # EPC delay propagation exploration
+│   ├── eval_models_testset.py          # One-off test-set evaluation (TNTComplEx/TGN-B)
+│   ├── plot_roc.py                     # ROC curve plotting helper
+│   ├── patch_neo4j_db.py / revert      # One-time Neo4j data patches
+│   └── run_exp_*.py / inject_exp_*.py  # Experiment injection scripts (development only)
+│
+└── src/                                # 🗄️  Legacy utility code (pre-thesis development)
+    ├── config.py                       # Neo4j connection settings
+    ├── graph/load_to_neo4j.py          # UC1 turbine data → Neo4j (not used in thesis)
+    └── models/                         # Early model prototypes (UC1/UC2 anomaly detection)
+                                        # Thesis models are in experiments/epc_compliance/models/
 ```
+
+> **Note on folder naming:** Physical folder names on disk (`UseCase4/`) reflect development history and are preserved for git stability. Logical names in this README (`epc_compliance/`, `epc_tkg/`) describe their thesis role.  
+> **Active thesis pipeline:** `data/UseCase4/` → `experiments/UseCase4/` → `notebooks/UseCase4/08_model_benchmark_final.ipynb`
 
 ---
 
-## UseCase4 — Full Benchmark Results
+## EPC Compliance Detection — Full Benchmark Results (TR Meram)
 
 ### Dataset
 
-| | Single project | Multi project (×100) | Multi-varied (×20 types) |
+| | Single project | Multi project (×100) | Multi-varied (×30 families) |
 |--|--|--|--|
 | Events (edges) | 29,150 | 2,915,000 | 559,877 |
 | Violations | 449 (1.54%) | 43,472 (1.49%) | 8,276 (1.48%) |
@@ -182,7 +196,7 @@ Same protocol as TGN/TGAT/DyRep: temporal 70/15/15 split, val-threshold, AUC/AUP
 | TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | Same |
 | StaticGNN | single | 0.759 | 0.498 | ×272.5 | Structural patterns; val_AUPRC=0.068 (small test set) |
 | StaticGNN | multi | — | — | — | Infeasible: 2.9M nodes GPU OOM, CPU ~60h |
-| StaticGNN | multi_varied | pending | — | — | Running |
+| StaticGNN | multi_varied | 0.930 | 0.353 | ×147.6 | Structure only; no temporal dynamics |
 
 **Core finding**: ComplEx and TNTComplEx = random at every scale. The same `(worker, step, relation)` triple can be either compliant or a violation depending only on the timestamp (certificate expiry). Static and time-binned embeddings cannot capture this signal without persistent memory.
 
@@ -202,7 +216,7 @@ Same protocol as TGN/TGAT/DyRep: temporal 70/15/15 split, val-threshold, AUC/AUP
 
 ---
 
-## Data Provenance — UseCase4
+## Data Provenance — TR Meram Dataset
 
 | Data | Source |
 |------|--------|
@@ -224,7 +238,7 @@ Data quality: 22 PASS / 0 FAIL / 3 WARN — run `python tests/test_real_data.py`
 conda activate tkg-env   # or: pip install torch numpy pandas scikit-learn scipy optuna matplotlib
 ```
 
-### UseCase4 Benchmark
+### EPC Compliance Benchmark
 ```bash
 # Single-project benchmark (all models × splits, ~45 min)
 python experiments/UseCase4/run_benchmark.py --dataset single --seeds 42
@@ -248,7 +262,7 @@ python experiments/UseCase4/tune_hyperparams.py
 python experiments/UseCase4/run_benchmark.py --dataset multi --seeds 42
 ```
 
-### UseCase4 Neo4j Import
+### Neo4j Import (TR Meram graph)
 ```bash
 python data/UseCase4/generate_epc_dataset.py
 python data/UseCase4/import_graph_real.py     # requires Neo4j at bolt://localhost:7687
@@ -261,7 +275,7 @@ jupyter lab   # then open notebooks/UseCase4/08_model_benchmark_final.ipynb
 
 ---
 
-## Methodology Checklist (UseCase4)
+## Methodology Checklist
 
 | # | Criterion | Status |
 |---|-----------|--------|
@@ -276,7 +290,7 @@ jupyter lab   # then open notebooks/UseCase4/08_model_benchmark_final.ipynb
 | 9 | Reproducibility | ✅ Fixed seed=42; multi-seed via `--seeds 42 43 44` |
 | 10 | Multi-project generalisation | ✅ Completed — TGAT×454.8 lift; architectural finding documented |
 | 11 | Expert label validation | ⏳ Future work |
-| 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (single×272.5; multi infeasible; multi_varied pending) |
+| 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (single ×272.5; multi infeasible; multi_varied ×147.6) |
 
 ---
 
@@ -289,6 +303,5 @@ jupyter lab   # then open notebooks/UseCase4/08_model_benchmark_final.ipynb
 - Kipf & Welling (2017) — Semi-Supervised Classification with Graph Convolutional Networks (GCN) · ICLR
 - Lacroix et al. (2020) — Tensor Decompositions for Knowledge Base Completion (TNTComplEx)
 - Liu et al. (2022) — T-Logic: Temporal Logical Rules for Explainable Link Forecasting
-- Vargas et al. (2019) — 3W Dataset · Journal of Petroleum Science and Engineering
 - Ratner et al. (2017) — Data Programming: Creating Large Training Sets Quickly · NeurIPS
 - TR Internal — Family_Steps_macro.xlsm · Meram_PCS_Progress.xlsx
