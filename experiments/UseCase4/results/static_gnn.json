@@ -1,3 +1,45 @@
 {
-  "results": []
+  "results": [
+    {
+      "model": "StaticGNN",
+      "split": "temporal",
+      "dataset": "single",
+      "type": "static_gnn",
+      "seed": 42,
+      "hidden": 64,
+      "best_depth": 1,
+      "depths_tried": [
+        1,
+        2
+      ],
+      "epochs": 50,
+      "n_entities": 29200,
+      "n_edge_feats": 6,
+      "feat_cols": [
+        "permit_enc",
+        "disc_enc",
+        "after_rc",
+        "on_critical_path",
+        "weight_pct",
+        "cert_expires_soon"
+      ],
+      "n_train": 20405,
+      "n_val": 4372,
+      "n_test": 4373,
+      "n_pos_test": 8,
+      "prevalence": 0.0018,
+      "threshold": 0.5417,
+      "train_sec": 1.6,
+      "auprc_lift": 272.45,
+      "metrics": {
+        "auc": 0.7592497136311569,
+        "auprc": 0.4984303366317796,
+        "f1": 0.22727272727272727,
+        "precision": 0.1388888888888889,
+        "recall": 0.625,
+        "n_pos": 8,
+        "n_total": 4373
+      }
+    }
+  ]
 }
