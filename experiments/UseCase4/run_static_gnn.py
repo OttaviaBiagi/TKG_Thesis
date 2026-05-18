@@ -285,6 +285,27 @@ def run_static_gnn(df, dataset_name: str, device: torch.device) -> dict:
             best_depth = d
             best_model = model
 
+    if best_model is None and str(device) != 'cpu':
+        # All GPU depths OOMed — move everything to CPU and retry
+        print(f'    All GPU depths OOMed — retrying on CPU...')
+        torch.cuda.empty_cache()
+        cpu = torch.device('cpu')
+        adj_norm   = adj_norm.to(cpu)
+        train_src, train_dst, train_feat, train_lbl = (
+            train_src.to(cpu), train_dst.to(cpu), train_feat.to(cpu), train_lbl.to(cpu))
+        val_src, val_dst, val_feat = val_src.to(cpu), val_dst.to(cpu), val_feat.to(cpu)
+        test_src, test_dst, test_feat = test_src.to(cpu), test_dst.to(cpu), test_feat.to(cpu)
+        device = cpu
+        for d in DEPTHS:
+            model, val_ap = train_one_depth(
+                n_ent, adj_norm,
+                train_src, train_dst, train_feat, train_lbl,
+                val_src,   val_dst,   val_feat,   val_lbl_np,
+                n_layers=d, device=cpu)
+            print(f'    depth={d}  val_AUPRC={val_ap:.4f}')
+            if val_ap > best_auprc:
+                best_auprc = val_ap; best_depth = d; best_model = model
+
     if best_model is None:
         print(f'    All depths failed — skipping dataset')
         return None
