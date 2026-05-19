@@ -99,8 +99,6 @@ Two evaluation scales — single-project (primary) and multi-varied (generalisat
 
 Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct · cert_expires_soon`
 
-> Note: a homogeneous multi dataset (100 identical instances, scoped node IDs) was initially evaluated but excluded from the main benchmark. Because each project uses independent node IDs (`P{proj}:worker`, `P{proj}:step`), models solve 100 separate single-project problems rather than generalising across projects. Results (TGAT AUC=1.000) are not valid cross-project metrics. The multi_varied dataset (30 structurally diverse EPC families, shared representation space) is the correct generalisation benchmark.
-
 ---
 
 ### Single-Project Benchmark (primary result)
@@ -122,7 +120,7 @@ Temporal 70/15/15 split · 8 test violations / 4,373 test events · threshold op
 
 TGN and StaticGNN evaluated on seeds 42, 43, 44. RF/LR/TGAT/ComplEx/TNTComplEx/DyRep on seed 42 (LR and RF are deterministic; KG embeddings converge to random at all seeds).
 
-† StaticGNN single AUPRC is not a reliable metric: val_AUPRC~0.065 across all seeds (model learns no consistent pattern), while test_AUPRC varies 0.498/0.626/0.513 purely due to the random position of 8 violations. AUC (0.759–0.784) confirms weak but real structural signal. **The reliable StaticGNN result is multi_varied: AUPRC=0.353 ± — (201 violations, single seed).**  
+† StaticGNN single AUPRC is not a reliable metric: val_AUPRC~0.065 across all seeds (model learns no consistent pattern), while test_AUPRC varies 0.498/0.626/0.513 purely due to the random position of 8 violations. AUC (0.759–0.784) confirms weak but real structural signal. **The reliable StaticGNN result is multi_varied: AUPRC=0.204±0.112 (seeds 42/43/44: 0.353/0.173/0.085, 201 violations). The high variance confirms that without temporal grounding, graph structure alone is sensitive to random initialisation even at scale.**  
 ‡ DyRep recall=1.0 is degenerate: threshold collapses to near-zero, flagging almost all events (precision=0.002). Confirmed architectural failure at 0.18% imbalance.
 
 **Key findings (single-project):**
@@ -152,20 +150,20 @@ Temporal split · 201 test violations / 83,982 test events · seeds 42, 43, 44.
 | Model | AUC | AUPRC mean±std (3 seeds) | Lift (mean) |
 |-------|-----|--------------------------|-------------|
 | **TGAT** | **0.979 ± 0.025** | **0.717 ± 0.073** | **×300** |
-| StaticGNN (d=2) | 0.930 | 0.353 (seed 42) | ×147.6 |
+| StaticGNN (d=2) | 0.932 ± 0.004 | 0.204 ± 0.112 | ×85 |
 | TGN | 0.983 ± 0.000 | 0.127 ± 0.001 | ×53 |
 | ComplEx | 0.521 | 0.002 | ×1.0 |
 | TNTComplEx | 0.516 | 0.002 | ×1.0 |
 
-TGAT seeds: AUPRC 0.646 / 0.713 / 0.791. TGN seeds: AUPRC 0.127 / 0.127 / 0.126 (stable but low).
+TGAT seeds: AUPRC 0.646 / 0.713 / 0.791. TGN seeds: AUPRC 0.127 / 0.127 / 0.126 (stable but low). StaticGNN seeds: AUPRC 0.353 / 0.173 / 0.085 (high variance — no temporal grounding).
 
 **Structural hierarchy — confirmed across 3 seeds on 201 violations:**
 
 ```
-ComplEx / TNTComplEx  ×1.0   (no structure, no time → random)
-         StaticGNN   ×147.6  (graph structure, no time)
-               TGN   ×53     (temporal memory, single-project optimised)
-              TGAT   ×300    (temporal attention, generalises cross-project)
+ComplEx / TNTComplEx  ×1.0       (no structure, no time → random)
+         StaticGNN   ×85 ± 47   (graph structure, no time; unstable across seeds)
+               TGN   ×53 ± 0.5  (temporal memory, single-project optimised)
+              TGAT   ×300 ± 31  (temporal attention, generalises cross-project)
 ```
 
 Each architectural layer adds a measurable, reproducible capability. This is the central theoretical contribution of the thesis.
@@ -208,7 +206,7 @@ Same protocol as TGN/TGAT/DyRep: temporal 70/15/15 split, val-threshold, AUC/AUP
 | TNTComplEx | single | 0.582 | 0.003 | ×1.6 | Time embedding — marginal gain |
 | TNTComplEx | multi_varied | 0.516 | 0.002 | ×1.0 | No persistent memory → random at scale |
 | StaticGNN | single | 0.773±0.010 | 0.546±0.057 | — | AUPRC unreliable (8 violations); AUC=0.77 shows weak structural signal |
-| StaticGNN | multi_varied | 0.930 | 0.353 | ×147.6 | Structure only, no time; reliable (201 violations) |
+| StaticGNN | multi_varied | 0.932±0.004 | 0.204±0.112 | ×85±47 | Structure only, no time; high variance across seeds (201 violations) |
 
 **Core finding**: ComplEx and TNTComplEx = random at every scale. The same `(worker, step, relation)` triple can be either compliant or a violation depending only on the timestamp (certificate expiry). Static and time-binned embeddings cannot capture this signal without persistent memory.
 
