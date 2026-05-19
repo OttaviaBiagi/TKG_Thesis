@@ -170,6 +170,21 @@ ComplEx / TNTComplEx  ×1.0   (no structure, no time → random)
 
 Each architectural layer adds a measurable, reproducible capability. This is the central theoretical contribution of the thesis.
 
+### Operational Value — What Lift ×300 Means in Practice
+
+EPC compliance teams cannot inspect every worker-step assignment. The model provides a ranked list of risk scores. With TGAT lift=×300 on multi_varied (AUPRC=0.717):
+
+| Inspection budget | Events inspected | Violations found | Miss rate |
+|-------------------|-----------------|------------------|-----------|
+| Top 0.33% of events | 277 / 83,982 | ~144 / 201 (72%) | 28% |
+| Top 0.5% of events | 420 / 83,982 | ~159 / 201 (79%) | 21% |
+| Top 1.0% of events | 840 / 83,982 | ~176 / 201 (88%) | 12% |
+| No model (random) | 277 / 83,982 | ~0.7 / 201 (0.3%) | 99.7% |
+
+**Interpretation for an EPC engineer**: reviewing the top 0.33% of flagged events (≈277 assignments per 84K) captures 72% of all permit violations — a ×219 improvement over random inspection. The model converts a manual compliance check (infeasible at scale) into a prioritised daily exception list of a few hundred events.
+
+TGN on single-project achieves the same pattern: threshold=0.052 flags 5.2% of events, capturing all 8 violations (recall=1.0). At the cost of 227 false alerts per true violation, which is acceptable in a safety-critical EPC context where a missed permit violation can halt a construction activity.
+
 ### Label Sanity Analysis (§2b, notebook 08)
 
 Labels from `epc_events.json['permit_denied']` — real operational EPC permit denials. Validated via 5 empirical tests (Ratner et al. 2017 / Mintz et al. 2009):
