@@ -1,19 +1,465 @@
 {
   "results": [
     {
-      "model": "TGN",
+      "model": "TGAT",
+      "split": "stratified",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 3307.6,
+      "n_train": 391913,
+      "n_val": 83981,
+      "n_test": 83983,
+      "n_pos_test": 1242,
+      "threshold": 1.0,
+      "metrics": {
+        "auc": 0.9386232704381585,
+        "auprc": 0.5599890852766125,
+        "f1": 0.5937641211025757,
+        "precision": 0.6766220391349125,
+        "recall": 0.5289855072463768,
+        "n_pos": 1242,
+        "n_total": 83983
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "stratified",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 3483.4,
+      "n_train": 391913,
+      "n_val": 83981,
+      "n_test": 83983,
+      "n_pos_test": 1242,
+      "threshold": 0.9622,
+      "metrics": {
+        "auc": 0.9161037232357744,
+        "auprc": 0.5903661894225454,
+        "f1": 0.6113744075829384,
+        "precision": 0.7430875576036866,
+        "recall": 0.5193236714975845,
+        "n_pos": 1242,
+        "n_total": 83983
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
       "split": "temporal",
       "dataset": "multi_varied",
-      "seed": 42,
-      "train_sec": 174.7,
+      "seed": 43,
+      "train_sec": 3546.8,
       "n_train": 391913,
       "n_val": 83982,
       "n_test": 83982,
       "n_pos_test": 201,
-      "threshold": 0.9673,
+      "threshold": 1.0,
       "metrics": {
-        "auc": 0.9830679737702792,
-        "auprc": 0.12221602905144528,
+        "auc": 0.9470330162486525,
+        "auprc": 0.7131557945451659,
+        "f1": 0.6855345911949685,
+        "precision": 0.9316239316239316,
+        "recall": 0.5422885572139303,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 1509.1,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.8039,
+      "metrics": {
+        "auc": 0.9971913863798303,
+        "auprc": 0.7914123515883851,
+        "f1": 0.6879271070615034,
+        "precision": 0.634453781512605,
+        "recall": 0.7512437810945274,
+        "n_pos": 201,
+        "n_total": 83982
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "6slot",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 536.2,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 1.0,
+      "metrics": {
+        "per_slot": {
+          "0": {
+            "auc": 0.8739533619172536,
+            "auprc": 0.5129873626150744,
+            "f1": 0.5614035087719298,
+            "precision": 0.8888888888888888,
+            "recall": 0.41025641025641024,
+            "n_pos": 39,
+            "n_total": 13997
+          },
+          "1": {
+            "auc": 0.9427826215698234,
+            "auprc": 0.7275795332603637,
+            "f1": 0.6863905325443787,
+            "precision": 0.9206349206349206,
+            "recall": 0.5471698113207547,
+            "n_pos": 106,
+            "n_total": 13997
+          },
+          "2": {
+            "auc": 0.9984897783780465,
+            "auprc": 0.8828169136401326,
+            "f1": 0.8524590163934426,
+            "precision": 1.0,
+            "recall": 0.7428571428571429,
+            "n_pos": 35,
+            "n_total": 13997
+          },
+          "3": {
+            "auc": 0.999009794809466,
+            "auprc": 0.849493006993007,
+            "f1": 0.75,
+            "precision": 1.0,
+            "recall": 0.6,
+            "n_pos": 10,
+            "n_total": 13997
+          },
+          "4": {
+            "auc": 0.9992752492752494,
+            "auprc": 0.6967518280720528,
+            "f1": 0.4,
+            "precision": 0.75,
+            "recall": 0.2727272727272727,
+            "n_pos": 11,
+            "n_total": 13997
+          },
+          "5": {
+            "auc": null,
+            "auprc": null,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 0,
+            "n_total": 13997
+          }
+        },
+        "overall": {
+          "auc": 0.9470330162486525,
+          "auprc": 0.7131557945451659,
+          "f1": 0.6855345911949685,
+          "precision": 0.9316239316239316,
+          "recall": 0.5422885572139303,
+          "n_pos": 201,
+          "n_total": 83982
+        }
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "6slot",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 537.7,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.8039,
+      "metrics": {
+        "per_slot": {
+          "0": {
+            "auc": 0.9949573996715421,
+            "auprc": 0.8060243735644189,
+            "f1": 0.75,
+            "precision": 0.8181818181818182,
+            "recall": 0.6923076923076923,
+            "n_pos": 39,
+            "n_total": 13997
+          },
+          "1": {
+            "auc": 0.9942768699157728,
+            "auprc": 0.8076479373334317,
+            "f1": 0.7255813953488373,
+            "precision": 0.7155963302752294,
+            "recall": 0.7358490566037735,
+            "n_pos": 106,
+            "n_total": 13997
+          },
+          "2": {
+            "auc": 0.9980088812491047,
+            "auprc": 0.8999118774533224,
+            "f1": 0.6597938144329897,
+            "precision": 0.5161290322580645,
+            "recall": 0.9142857142857143,
+            "n_pos": 35,
+            "n_total": 13997
+          },
+          "3": {
+            "auc": 0.9990848645170516,
+            "auprc": 0.7821073540280857,
+            "f1": 0.6206896551724138,
+            "precision": 0.47368421052631576,
+            "recall": 0.9,
+            "n_pos": 10,
+            "n_total": 13997
+          },
+          "4": {
+            "auc": 0.9973674973674974,
+            "auprc": 0.5165418011196494,
+            "f1": 0.38461538461538464,
+            "precision": 0.3333333333333333,
+            "recall": 0.45454545454545453,
+            "n_pos": 11,
+            "n_total": 13997
+          },
+          "5": {
+            "auc": null,
+            "auprc": null,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 0,
+            "n_total": 13997
+          }
+        },
+        "overall": {
+          "auc": 0.9971913863798303,
+          "auprc": 0.7914123515883851,
+          "f1": 0.6879271070615034,
+          "precision": 0.634453781512605,
+          "recall": 0.7512437810945274,
+          "n_pos": 201,
+          "n_total": 83982
+        }
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "inductive",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 484.2,
+      "n_train": 353406,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.9999,
+      "metrics": {
+        "overall": {
+          "auc": 0.973755433572045,
+          "auprc": 0.5253782146298892,
+          "f1": 0.5013927576601671,
+          "precision": 0.569620253164557,
+          "recall": 0.44776119402985076,
+          "n_pos": 201,
+          "n_total": 83982
+        },
+        "new_nodes": {
+          "auc": 0.9224874636226923,
+          "auprc": 0.10104272435471037,
+          "f1": 0.10909090909090909,
+          "precision": 0.09375,
+          "recall": 0.13043478260869565,
+          "n_pos": 23,
+          "n_total": 8494
+        },
+        "seen_nodes": {
+          "auc": 0.9764662615496398,
+          "auprc": 0.6038959797990892,
+          "f1": 0.5723684210526315,
+          "precision": 0.6904761904761905,
+          "recall": 0.4887640449438202,
+          "n_pos": 178,
+          "n_total": 75488
+        }
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGAT",
+      "split": "inductive",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 483.9,
+      "n_train": 353406,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.9988,
+      "metrics": {
+        "overall": {
+          "auc": 0.9864909586299415,
+          "auprc": 0.6190069515767251,
+          "f1": 0.6032786885245902,
+          "precision": 0.8846153846153846,
+          "recall": 0.4577114427860697,
+          "n_pos": 201,
+          "n_total": 83982
+        },
+        "new_nodes": {
+          "auc": 0.9480118871033142,
+          "auprc": 0.2797052445145011,
+          "f1": 0.3333333333333333,
+          "precision": 0.3684210526315789,
+          "recall": 0.30434782608695654,
+          "n_pos": 23,
+          "n_total": 8494
+        },
+        "seen_nodes": {
+          "auc": 0.989032448650447,
+          "auprc": 0.694001473476881,
+          "f1": 0.6463878326996197,
+          "precision": 1.0,
+          "recall": 0.47752808988764045,
+          "n_pos": 178,
+          "n_total": 75488
+        }
+      },
+      "hparams": {
+        "embed_dim": 64,
+        "n_heads": 4,
+        "n_neighbors": 20,
+        "lr": 0.001,
+        "pos_weight_factor": 15.0,
+        "batch_size": 512
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "stratified",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 64.7,
+      "n_train": 391913,
+      "n_val": 83981,
+      "n_test": 83983,
+      "n_pos_test": 1242,
+      "threshold": 0.0253,
+      "metrics": {
+        "auc": 0.8572975453484721,
+        "auprc": 0.07217388725077867,
+        "f1": 0.09467546417063066,
+        "precision": 0.04970595343591396,
+        "recall": 0.9935587761674718,
+        "n_pos": 1242,
+        "n_total": 83983
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "stratified",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 65.0,
+      "n_train": 391913,
+      "n_val": 83981,
+      "n_test": 83983,
+      "n_pos_test": 1242,
+      "threshold": 0.7923,
+      "metrics": {
+        "auc": 0.8564187189402174,
+        "auprc": 0.0737343002887691,
+        "f1": 0.09364806866952789,
+        "precision": 0.04946051319249252,
+        "recall": 0.8784219001610306,
+        "n_pos": 1242,
+        "n_total": 83983
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "temporal",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 64.1,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 1.0,
+      "metrics": {
+        "auc": 0.9832033064645381,
+        "auprc": 0.1268860676937766,
         "f1": 0.10377358490566038,
         "precision": 1.0,
         "recall": 0.05472636815920398,
@@ -30,59 +476,302 @@
       }
     },
     {
-      "model": "TGAT",
+      "model": "TGN",
       "split": "temporal",
       "dataset": "multi_varied",
-      "seed": 42,
-      "train_sec": 2995.5,
+      "seed": 44,
+      "train_sec": 64.4,
       "n_train": 391913,
       "n_val": 83982,
       "n_test": 83982,
       "n_pos_test": 201,
-      "threshold": 0.3259,
+      "threshold": 1.0,
       "metrics": {
-        "auc": 0.991994795006004,
-        "auprc": 0.6464655220403824,
-        "f1": 0.6025641025641025,
-        "precision": 0.5280898876404494,
-        "recall": 0.7014925373134329,
-        "n_pos": 201,
-        "n_total": 83982
-      },
-      "hparams": {
-        "embed_dim": 64,
-        "n_heads": 4,
-        "n_neighbors": 20,
-        "lr": 0.001,
-        "pos_weight_factor": 15.0,
-        "batch_size": 512
-      }
-    },
-    {
-      "model": "DyRep",
-      "split": "temporal",
-      "dataset": "multi_varied",
-      "seed": 42,
-      "train_sec": 3547.9,
-      "n_train": 391913,
-      "n_val": 83982,
-      "n_test": 83982,
-      "n_pos_test": 201,
-      "threshold": 0.5,
-      "metrics": {
-        "auc": 0.5,
-        "auprc": 0.002393370007858827,
-        "f1": 0.004775310929760165,
-        "precision": 0.002393370007858827,
-        "recall": 1.0,
+        "auc": 0.9831581757722885,
+        "auprc": 0.12633573126964753,
+        "f1": 0.03902439024390244,
+        "precision": 1.0,
+        "recall": 0.01990049751243781,
         "n_pos": 201,
         "n_total": 83982
       },
       "hparams": {
         "embed_dim": 32,
-        "n_neighbors": 10,
-        "lr": 0.0001,
-        "intensity_reg": 0.001,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "6slot",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 64.7,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 1.0,
+      "metrics": {
+        "per_slot": {
+          "0": {
+            "auc": 0.9785850224666675,
+            "auprc": 0.06253640717615648,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 39,
+            "n_total": 13997
+          },
+          "1": {
+            "auc": 0.9527008121180676,
+            "auprc": 0.13353871226603897,
+            "f1": 0.10714285714285714,
+            "precision": 1.0,
+            "recall": 0.05660377358490566,
+            "n_pos": 106,
+            "n_total": 13997
+          },
+          "2": {
+            "auc": 0.976851453946426,
+            "auprc": 0.16631091617933724,
+            "f1": 0.20512820512820512,
+            "precision": 1.0,
+            "recall": 0.11428571428571428,
+            "n_pos": 35,
+            "n_total": 13997
+          },
+          "3": {
+            "auc": 0.9921212554514907,
+            "auprc": 0.13845624182331476,
+            "f1": 0.18181818181818182,
+            "precision": 1.0,
+            "recall": 0.1,
+            "n_pos": 10,
+            "n_total": 13997
+          },
+          "4": {
+            "auc": 0.9941922441922442,
+            "auprc": 0.06341742548639101,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 11,
+            "n_total": 13997
+          },
+          "5": {
+            "auc": null,
+            "auprc": null,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 0,
+            "n_total": 13997
+          }
+        },
+        "overall": {
+          "auc": 0.9832033064645381,
+          "auprc": 0.1268860676937766,
+          "f1": 0.10377358490566038,
+          "precision": 1.0,
+          "recall": 0.05472636815920398,
+          "n_pos": 201,
+          "n_total": 83982
+        }
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "6slot",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 65.7,
+      "n_train": 391913,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 1.0,
+      "metrics": {
+        "per_slot": {
+          "0": {
+            "auc": 0.978856900371444,
+            "auprc": 0.06308174720660643,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 39,
+            "n_total": 13997
+          },
+          "1": {
+            "auc": 0.9520209909225874,
+            "auprc": 0.1358796876895222,
+            "f1": 0.05504587155963303,
+            "precision": 1.0,
+            "recall": 0.02830188679245283,
+            "n_pos": 106,
+            "n_total": 13997
+          },
+          "2": {
+            "auc": 0.976851453946426,
+            "auprc": 0.16631091617933724,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 35,
+            "n_total": 13997
+          },
+          "3": {
+            "auc": 0.9921212554514907,
+            "auprc": 0.13845624182331476,
+            "f1": 0.18181818181818182,
+            "precision": 1.0,
+            "recall": 0.1,
+            "n_pos": 10,
+            "n_total": 13997
+          },
+          "4": {
+            "auc": 0.9941922441922442,
+            "auprc": 0.06341742548639101,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 11,
+            "n_total": 13997
+          },
+          "5": {
+            "auc": null,
+            "auprc": null,
+            "f1": 0.0,
+            "precision": 0.0,
+            "recall": 0.0,
+            "n_pos": 0,
+            "n_total": 13997
+          }
+        },
+        "overall": {
+          "auc": 0.9831581757722885,
+          "auprc": 0.12633573126964753,
+          "f1": 0.03902439024390244,
+          "precision": 1.0,
+          "recall": 0.01990049751243781,
+          "n_pos": 201,
+          "n_total": 83982
+        }
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "inductive",
+      "dataset": "multi_varied",
+      "seed": 43,
+      "train_sec": 58.6,
+      "n_train": 353406,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 1.0,
+      "metrics": {
+        "overall": {
+          "auc": 0.9829538406248796,
+          "auprc": 0.11945866600399027,
+          "f1": 0.10377358490566038,
+          "precision": 1.0,
+          "recall": 0.05472636815920398,
+          "n_pos": 201,
+          "n_total": 83982
+        },
+        "new_nodes": {
+          "auc": 0.9814815765296432,
+          "auprc": 0.11445459656180829,
+          "f1": 0.08333333333333333,
+          "precision": 1.0,
+          "recall": 0.043478260869565216,
+          "n_pos": 23,
+          "n_total": 8494
+        },
+        "seen_nodes": {
+          "auc": 0.9832634474136118,
+          "auprc": 0.12219741874551163,
+          "f1": 0.10638297872340426,
+          "precision": 1.0,
+          "recall": 0.056179775280898875,
+          "n_pos": 178,
+          "n_total": 75488
+        }
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
+        "pos_weight_factor": 10.0,
+        "batch_size": 256
+      }
+    },
+    {
+      "model": "TGN",
+      "split": "inductive",
+      "dataset": "multi_varied",
+      "seed": 44,
+      "train_sec": 57.5,
+      "n_train": 353406,
+      "n_val": 83982,
+      "n_test": 83982,
+      "n_pos_test": 201,
+      "threshold": 0.9661,
+      "metrics": {
+        "overall": {
+          "auc": 0.9832503373964614,
+          "auprc": 0.1266005553137186,
+          "f1": 0.10377358490566038,
+          "precision": 1.0,
+          "recall": 0.05472636815920398,
+          "n_pos": 201,
+          "n_total": 83982
+        },
+        "new_nodes": {
+          "auc": 0.9812095486904169,
+          "auprc": 0.15198140883376388,
+          "f1": 0.08333333333333333,
+          "precision": 1.0,
+          "recall": 0.043478260869565216,
+          "n_pos": 23,
+          "n_total": 8494
+        },
+        "seen_nodes": {
+          "auc": 0.9836920130874782,
+          "auprc": 0.1267477216356011,
+          "f1": 0.10638297872340426,
+          "precision": 1.0,
+          "recall": 0.056179775280898875,
+          "n_pos": 178,
+          "n_total": 75488
+        }
+      },
+      "hparams": {
+        "embed_dim": 32,
+        "memory_dim": 32,
+        "message_dim": 32,
+        "lr": 0.001,
         "pos_weight_factor": 10.0,
         "batch_size": 256
       }
