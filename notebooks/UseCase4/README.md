@@ -15,7 +15,7 @@ For chapter-to-notebook mapping, see [THESIS_GUIDE.md](../../THESIS_GUIDE.md).
 | `05_tgn_epc.ipynb` | — | TGN prototype (early exploration, superseded by 08) |
 | `06_tkg_models.ipynb` | — | TNTComplEx + RF/XGBoost development notebook |
 | `07_four_layer_tlogic.ipynb` | §4d | T-Logic symbolic rules, R1/R2/R3, P=R=F1=0.875 |
-| **`08_model_benchmark_final.ipynb`** | **§5** | **★ MAIN: full benchmark, all models, all results** |
+| **`08_model_benchmark_final.ipynb`** | **§5** | **[MAIN] Full benchmark, all models, all results** |
 
 ## Archive
 

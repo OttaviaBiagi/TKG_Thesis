@@ -21,7 +21,7 @@
 ```
 TKG_Thesis/
 │
-├── data/epc_tkg/                       # ★ TR Meram EPC dataset (thesis data)
+├── data/epc_tkg/                       # [THESIS DATA] TR Meram EPC dataset
 │   (folder on disk: data/UseCase4/)
 │   ├── epc_dataset_real.json           # TKG built from real TR activity/step/worker data
 │   ├── epc_events.json                 # Real permit-denial event records (labels)
@@ -30,7 +30,7 @@ TKG_Thesis/
 │   ├── projects/                       # Multi-project instances (proj_000–proj_099, V000–V029)
 │   └── queries/                        # Cypher: temporal compliance, critical path
 │
-├── notebooks/epc_compliance/           # ★ Thesis analysis notebooks
+├── notebooks/epc_compliance/           # [THESIS] Analysis notebooks
 │   (folder on disk: notebooks/UseCase4/)
 │   ├── 01_explore_epc.ipynb            # Dataset exploration + Neo4j verification
 │   ├── 02_temporal_queries.ipynb       # Bitemporal compliance queries
@@ -39,16 +39,16 @@ TKG_Thesis/
 │   ├── 05_tgn_epc.ipynb               # TGN prototype (early exploration)
 │   ├── 06_tkg_models.ipynb             # TNTComplEx + RF/XGBoost baselines
 │   ├── 07_four_layer_tlogic.ipynb      # T-Logic symbolic rules + cascade risk
-│   ├── 08_model_benchmark_final.ipynb  # ★ MAIN: full benchmark TGN/TGAT/DyRep ×4 splits
-│   │                                   #   + label sanity (T1–T5) + all static baselines
-│   └── archive_synth_v1/              # 📦 Archive: synthetic-data prototype (pre-real-data)
+│   ├── 08_model_benchmark_final.ipynb  # [MAIN] Full benchmark: TGN/TGAT/DyRep x4 splits
+│   │                                   #   + label sanity (T1-T5) + all static baselines
+│   └── archive_synth_v1/              # [ARCHIVE] Synthetic-data prototype (pre-real-data)
 │                                       #   Not part of thesis — kept for development history
 │
-├── experiments/epc_compliance/         # ★ Thesis training & evaluation pipeline
+├── experiments/epc_compliance/         # [THESIS] Training & evaluation pipeline
 │   (folder on disk: experiments/UseCase4/)
 │   ├── eval_framework.py               # split_dataset · compute_metrics · find_best_threshold
 │   ├── data_loader.py                  # load_single_project / load_multi_project
-│   ├── run_benchmark.py                # TGN/TGAT/DyRep × 4 splits × N seeds
+│   ├── run_benchmark.py                # TGN/TGAT/DyRep x 4 splits x N seeds
 │   ├── run_ml_baseline.py              # LR + RF feature-only baselines
 │   ├── run_static_baseline.py          # ComplEx + TNTComplEx (all 3 scales)
 │   ├── run_static_gnn.py               # Static GCN (structure-only, no time)
@@ -60,20 +60,20 @@ TKG_Thesis/
 │       ├── static_baseline.json        # ComplEx + TNTComplEx (all 3 scales)
 │       └── static_gnn.json             # StaticGNN results (single + multi_varied)
 │
-├── tests/                              # Data validation (pytest) — run once before experiments
-│   ├── test_real_data.py               # ✅ UC4: 22 quality tests on TR Meram data (T1–T5)
-│   └── test_3w.py                      # ⚠️  Legacy UC2 leftover (Petrobras 3W) — not used
+├── tests/                              # Data validation — run once before experiments
+│   ├── test_real_data.py               # 22 quality checks on TR Meram data (T1-T5)
+│   └── test_3w.py                      # [LEGACY] UC2 leftover (Petrobras 3W) — not used
 │
-├── scripts/                            # 🗄️  Development utilities (not thesis pipeline)
+├── scripts/                            # Development utilities (not thesis pipeline)
 │   ├── delay_analysis.py               # EPC delay propagation exploration
 │   ├── eval_models_testset.py          # One-off test-set evaluation (TNTComplEx/TGN-B)
 │   ├── plot_roc.py                     # ROC curve plotting helper
-│   ├── patch_neo4j_db.py / revert      # One-time Neo4j data patches
+│   ├── patch_neo4j_db.py / revert      # One-time Neo4j data corrections
 │   └── run_exp_*.py / inject_exp_*.py  # Experiment injection scripts (development only)
 │
-└── src/                                # 🗄️  Legacy utility code (pre-thesis development)
+└── src/                                # Legacy utility code (pre-thesis development)
     ├── config.py                       # Neo4j connection settings
-    ├── graph/load_to_neo4j.py          # UC1 turbine data → Neo4j (not used in thesis)
+    ├── graph/load_to_neo4j.py          # UC1 turbine data -> Neo4j (not used in thesis)
     └── models/                         # Early model prototypes (UC1/UC2 anomaly detection)
                                         # Thesis models are in experiments/epc_compliance/models/
 ```
@@ -100,20 +100,22 @@ Features: `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct 
 
 > Temporal 70/15/15 split · **8 test violations / 4,373 test events** (prevalence=0.18%) · threshold on val · seed=42 · **Note: with only 8 test violations, AUPRC estimates are high-variance. AUC is more reliable here; multi_varied (201 violations) is the statistically stable benchmark.**
 
+Ordered by AUC (most reliable metric with only 8 test violations — AUPRC is high-variance at this scale).
+
 | Model | Type | AUC | AUPRC | Lift | F1 | Recall |
 |-------|------|-----|-------|------|----|--------|
-| StaticGNN (d=1) | Structure-only GNN | 0.759 | 0.498† | ×272† | 0.227 | 0.625 |
 | **TGN** | Temporal GNN | **0.985** | **0.178** | **×98.9** | 0.084 | **1.000** |
-| Logistic Regression | Feature-only ML | 0.738 | 0.161 | ×88.4 | 0.024 | 0.625 |
 | Random Forest | Feature-only ML | 0.978 | 0.160 | ×87.8 | 0.071 | 0.125 |
 | TGAT | Temporal GNN | 0.822 | 0.046 | ×25.6 | 0.129 | 0.250 |
+| Logistic Regression | Feature-only ML | 0.738 | 0.161 | ×88.4 | 0.024 | 0.625 |
+| StaticGNN (d=1) | Structure-only GNN | 0.759 | 0.498† | ×272† | 0.227 | 0.625 |
 | TNTComplEx | Time-aware KG emb | 0.582 | 0.003 | ×1.6 | 0.004 | — |
-| DyRep | Temporal GNN | 0.416 | 0.002 | ×1.1 | 0.004 | 1.000‡ |
-| ComplEx | Static KG emb | 0.440 | 0.002 | ×1.0 | 0.004 | — |
 | Random baseline | — | 0.500 | 0.002 | ×1.0 | — | — |
+| ComplEx | Static KG emb | 0.440 | 0.002 | ×1.0 | 0.004 | — |
+| DyRep | Temporal GNN | 0.416 | 0.002 | ×1.1 | 0.004 | 1.000‡ |
 
-† StaticGNN single: val_AUPRC=0.068 vs test_AUPRC=0.498 — high-variance artefact of 8 test violations. Multi_varied (201 violations) gives StaticGNN AUPRC=0.353 (×147.6), correctly below TGAT ×309.0.  
-‡ DyRep recall=1.0 is degenerate: val-tuned threshold collapses to near-zero, flagging almost all events as violations (precision=0.002). Confirmed failure.
+† StaticGNN single AUPRC=0.498 is a high-variance artefact of 8 test violations (val_AUPRC=0.068 confirms instability). Do not report as a reliable result. The reliable StaticGNN figure is multi_varied: AUPRC=0.353, ×147.6 (201 violations).  
+‡ DyRep recall=1.0 is degenerate: val-tuned threshold collapses to near-zero, flagging almost all events as violations (precision=0.002). Confirmed architectural failure.
 
 **Key findings:**
 - **TGN best overall** (AUC=0.985, recall=1.0 — catches all 8 violations). Persistent memory module accumulates worker certificate history over time.
