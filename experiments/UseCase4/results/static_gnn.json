@@ -8,11 +8,21 @@
       "seed": 42,
       "hidden": 64,
       "best_depth": 1,
-      "depths_tried": [1, 2],
+      "depths_tried": [
+        1,
+        2
+      ],
       "epochs": 50,
       "n_entities": 29200,
       "n_edge_feats": 6,
-      "feat_cols": ["permit_enc", "disc_enc", "after_rc", "on_critical_path", "weight_pct", "cert_expires_soon"],
+      "feat_cols": [
+        "permit_enc",
+        "disc_enc",
+        "after_rc",
+        "on_critical_path",
+        "weight_pct",
+        "cert_expires_soon"
+      ],
       "n_train": 20405,
       "n_val": 4372,
       "n_test": 4373,
@@ -40,11 +50,21 @@
       "seed": 42,
       "hidden": 64,
       "best_depth": 2,
-      "depths_tried": [1, 2],
+      "depths_tried": [
+        1,
+        2
+      ],
       "epochs": 50,
       "n_entities": 561317,
       "n_edge_feats": 6,
-      "feat_cols": ["permit_enc", "disc_enc", "after_rc", "on_critical_path", "weight_pct", "cert_expires_soon"],
+      "feat_cols": [
+        "permit_enc",
+        "disc_enc",
+        "after_rc",
+        "on_critical_path",
+        "weight_pct",
+        "cert_expires_soon"
+      ],
       "n_train": 391913,
       "n_val": 83982,
       "n_test": 83982,
@@ -61,6 +81,88 @@
         "recall": 0.5174129353233831,
         "n_pos": 201,
         "n_total": 83982
+      }
+    },
+    {
+      "model": "StaticGNN",
+      "split": "temporal",
+      "dataset": "single",
+      "type": "static_gnn",
+      "seed": 43,
+      "hidden": 64,
+      "best_depth": 2,
+      "depths_tried": [
+        1,
+        2
+      ],
+      "epochs": 50,
+      "n_entities": 29200,
+      "n_edge_feats": 6,
+      "feat_cols": [
+        "permit_enc",
+        "disc_enc",
+        "after_rc",
+        "on_critical_path",
+        "weight_pct",
+        "cert_expires_soon"
+      ],
+      "n_train": 20405,
+      "n_val": 4372,
+      "n_test": 4373,
+      "n_pos_test": 8,
+      "prevalence": 0.0018,
+      "threshold": 0.0088,
+      "train_sec": 2.3,
+      "auprc_lift": 342.31,
+      "metrics": {
+        "auc": 0.7836769759450172,
+        "auprc": 0.6262191482695889,
+        "f1": 0.6666666666666666,
+        "precision": 1.0,
+        "recall": 0.5,
+        "n_pos": 8,
+        "n_total": 4373
+      }
+    },
+    {
+      "model": "StaticGNN",
+      "split": "temporal",
+      "dataset": "single",
+      "type": "static_gnn",
+      "seed": 44,
+      "hidden": 64,
+      "best_depth": 2,
+      "depths_tried": [
+        1,
+        2
+      ],
+      "epochs": 50,
+      "n_entities": 29200,
+      "n_edge_feats": 6,
+      "feat_cols": [
+        "permit_enc",
+        "disc_enc",
+        "after_rc",
+        "on_critical_path",
+        "weight_pct",
+        "cert_expires_soon"
+      ],
+      "n_train": 20405,
+      "n_val": 4372,
+      "n_test": 4373,
+      "n_pos_test": 8,
+      "prevalence": 0.0018,
+      "threshold": 0.2961,
+      "train_sec": 2.2,
+      "auprc_lift": 280.35,
+      "metrics": {
+        "auc": 0.7752290950744559,
+        "auprc": 0.5128689103720389,
+        "f1": 0.2222222222222222,
+        "precision": 1.0,
+        "recall": 0.125,
+        "n_pos": 8,
+        "n_total": 4373
       }
     }
   ]
