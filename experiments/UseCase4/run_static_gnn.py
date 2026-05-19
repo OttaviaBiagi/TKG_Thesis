@@ -423,7 +423,7 @@ def main():
     for m, ds, auc, auprc, lift in ref:
         print(f"  {m:<14} {ds:<14} {auc:>6.3f}  {auprc:>6.3f}  \xd7{lift:>6.1f}")
     print('  ' + '-' * 60)
-    for r in results:
+    for r in new_results:
         m = r['metrics']
         print(f"  {'StaticGNN(d='+str(r['best_depth'])+')':<14} {r['dataset']:<14} "
               f"{m['auc']:>6.3f}  {m['auprc']:>6.3f}  \xd7{r['auprc_lift']:>6.1f}")
