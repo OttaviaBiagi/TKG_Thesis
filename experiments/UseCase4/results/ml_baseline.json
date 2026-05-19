@@ -28,7 +28,7 @@
       "split": "temporal",
       "dataset": "single",
       "type": "ml_baseline",
-      "train_sec": 0.56,
+      "train_sec": 0.67,
       "n_train": 20405,
       "n_val": 4372,
       "n_test": 4373,
