@@ -216,7 +216,7 @@ def train_one_depth(n_entities, adj_norm, train_src, train_dst, train_feat, trai
 
 # ─── Experiment runner ────────────────────────────────────────────────────────
 
-def run_static_gnn(df, dataset_name: str, device: torch.device) -> dict:
+def run_static_gnn(df, dataset_name: str, device: torch.device, seed: int = SEED) -> dict:
     print(f'\n  [StaticGNN] [{dataset_name}] building graph + splitting...')
 
     train_df, val_df, test_df = split_dataset(
@@ -335,7 +335,7 @@ def run_static_gnn(df, dataset_name: str, device: torch.device) -> dict:
         'split':       'temporal',
         'dataset':     dataset_name,
         'type':        'static_gnn',
-        'seed':        SEED,
+        'seed':        seed,
         'hidden':      HIDDEN,
         'best_depth':  best_depth,
         'depths_tried': DEPTHS,
@@ -363,9 +363,12 @@ def main():
     parser.add_argument('--dataset', choices=['single', 'multi', 'multi_varied', 'all'],
                         default='all')
     parser.add_argument('--data_dir', default='data/UseCase4')
+    parser.add_argument('--seed', type=int, default=SEED,
+                        help='Random seed (default 42)')
     args = parser.parse_args()
 
-    np.random.seed(SEED); torch.manual_seed(SEED)
+    seed = args.seed
+    np.random.seed(seed); torch.manual_seed(seed)
     device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     run_all = args.dataset == 'all'
 
@@ -379,18 +382,30 @@ def main():
     if args.dataset == 'multi'        or run_all: loaders.append(('multi',        load_multi_project))
     if args.dataset == 'multi_varied' or run_all: loaders.append(('multi_varied', load_multi_varied))
 
-    results = []
+    # Load existing results to accumulate (avoid overwriting other seeds/datasets)
+    out_path = RESULTS_DIR / 'static_gnn.json'
+    if out_path.exists():
+        existing = json.loads(out_path.read_text(encoding='utf-8')).get('results', [])
+    else:
+        existing = []
+
+    new_results = []
     for ds_name, loader_fn in loaders:
         print(f'\nLoading {ds_name}...')
         df = loader_fn(args.data_dir)
-        r  = run_static_gnn(df, ds_name, device)
+        r  = run_static_gnn(df, ds_name, device, seed=seed)
         if r is not None:
-            results.append(r)
+            new_results.append(r)
 
-    out_path = RESULTS_DIR / 'static_gnn.json'
+    # Merge: keep existing entries that differ in seed or dataset, add new ones
+    kept = [e for e in existing
+            if not any(e['dataset'] == r['dataset'] and e['seed'] == r['seed']
+                       for r in new_results)]
+    merged = kept + new_results
+
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump({'results': results}, f, indent=2)
-    print(f'\nSaved -> {out_path}')
+        json.dump({'results': merged}, f, indent=2)
+    print(f'\nSaved -> {out_path} ({len(merged)} total entries)')
 
     # ── Summary table ──────────────────────────────────────────────────────────
     ref = [
