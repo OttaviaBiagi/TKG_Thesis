@@ -1,0 +1,136 @@
+{
+  "benchmark": "SO4_H3_sparql_temporal_overhead",
+  "substrate": "rdflib 7.x in-memory",
+  "triples": 5179,
+  "n_runs": 200,
+  "warmup": 20,
+  "date_anchors": {
+    "date_post": "2024-07-01T00:00:00+00:00",
+    "date_pre": "2024-05-01T00:00:00+00:00",
+    "tx_snap": "2026-06-01T00:00:00+00:00"
+  },
+  "queries": {
+    "SA1": {
+      "id": "SA1",
+      "label": "1-hop cert holding \u2014 atemporal",
+      "pair": "S1",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?cert WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert .\n            }\n        ",
+      "metrics": {
+        "mean_ms": 7.873,
+        "std_ms": 3.077,
+        "median_ms": 6.946,
+        "min_ms": 5.756,
+        "max_ms": 27.78,
+        "rows": 146,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    },
+    "ST1": {
+      "id": "ST1",
+      "label": "1-hop cert holding \u2014 valid-time filter",
+      "pair": "S1",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?cert WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert ;\n                   epc:validFrom ?vf ;\n                   epc:validTo   ?vt .\n                FILTER(\"2024-07-01T00:00:00+00:00\"^^xsd:dateTime >= ?vf)\n                FILTER(\"2024-07-01T00:00:00+00:00\"^^xsd:dateTime <= ?vt)\n            }\n        ",
+      "metrics": {
+        "mean_ms": 23.518,
+        "std_ms": 2.058,
+        "median_ms": 23.025,
+        "min_ms": 21.231,
+        "max_ms": 36.517,
+        "rows": 141,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    },
+    "SA2": {
+      "id": "SA2",
+      "label": "3-hop compliance chain \u2014 atemporal",
+      "pair": "S2",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?permit ?cert WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert .\n                ?req a epc:PermitCertRequirement ;\n                     epc:forPermit ?permit ;\n                     epc:requiresCertification ?cert .\n            }\n        ",
+      "metrics": {
+        "mean_ms": 74.233,
+        "std_ms": 6.419,
+        "median_ms": 72.964,
+        "min_ms": 66.832,
+        "max_ms": 146.536,
+        "rows": 161,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    },
+    "ST2": {
+      "id": "ST2",
+      "label": "3-hop compliance chain \u2014 valid-time filter",
+      "pair": "S2",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?permit ?cert WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert ;\n                   epc:validFrom ?hf ; epc:validTo ?ht .\n                ?req a epc:PermitCertRequirement ;\n                     epc:forPermit ?permit ;\n                     epc:requiresCertification ?cert ;\n                     epc:validFrom ?rf ; epc:validTo ?rt .\n                FILTER(\"2024-07-01T00:00:00+00:00\"^^xsd:dateTime >= ?hf && \"2024-07-01T00:00:00+00:00\"^^xsd:dateTime <= ?ht)\n                FILTER(\"2024-07-01T00:00:00+00:00\"^^xsd:dateTime >= ?rf && \"2024-07-01T00:00:00+00:00\"^^xsd:dateTime <= ?rt)\n            }\n        ",
+      "metrics": {
+        "mean_ms": 107.394,
+        "std_ms": 7.554,
+        "median_ms": 105.921,
+        "min_ms": 98.159,
+        "max_ms": 188.624,
+        "rows": 39,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    },
+    "ST3_single": {
+      "id": "ST3_single",
+      "label": "Cert lookup \u2014 valid-time only (single axis)",
+      "pair": "S3",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?cert ?vf ?vt WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert ;\n                   epc:validFrom ?vf ; epc:validTo ?vt .\n                FILTER(\"2024-05-01T00:00:00+00:00\"^^xsd:dateTime >= ?vf)\n                FILTER(\"2024-05-01T00:00:00+00:00\"^^xsd:dateTime <= ?vt)\n            }\n        ",
+      "metrics": {
+        "mean_ms": 24.29,
+        "std_ms": 2.222,
+        "median_ms": 23.79,
+        "min_ms": 22.174,
+        "max_ms": 42.194,
+        "rows": 143,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    },
+    "ST3_bitemporal": {
+      "id": "ST3_bitemporal",
+      "label": "Cert lookup \u2014 bitemporal as-of (both axes)",
+      "pair": "S3",
+      "sparql": "\nPREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\n\n            SELECT ?worker ?cert ?vf ?vt ?tx WHERE {\n                ?h a epc:CertificationHolding ;\n                   epc:byWorker ?worker ;\n                   epc:holdsCertification ?cert ;\n                   epc:validFrom ?vf ; epc:validTo ?vt ;\n                   epc:txTime    ?tx .\n                FILTER(\"2024-05-01T00:00:00+00:00\"^^xsd:dateTime >= ?vf)\n                FILTER(\"2024-05-01T00:00:00+00:00\"^^xsd:dateTime <= ?vt)\n                FILTER(?tx <= \"2026-06-01T00:00:00+00:00\"^^xsd:dateTime)\n            }\n        ",
+      "metrics": {
+        "mean_ms": 32.181,
+        "std_ms": 3.471,
+        "median_ms": 31.621,
+        "min_ms": 28.286,
+        "max_ms": 58.729,
+        "rows": 143,
+        "n_runs": 200,
+        "warmup": 20
+      }
+    }
+  },
+  "overhead": [
+    {
+      "pair": "S1",
+      "desc": "1-hop cert holding",
+      "base_ms": 7.873,
+      "temp_ms": 23.518,
+      "overhead_pct": 198.7,
+      "h3_pass": false
+    },
+    {
+      "pair": "S2",
+      "desc": "3-hop compliance chain",
+      "base_ms": 74.233,
+      "temp_ms": 107.394,
+      "overhead_pct": 44.7,
+      "h3_pass": true
+    },
+    {
+      "pair": "S3",
+      "desc": "Single-axis vs bitemporal as-of",
+      "base_ms": 24.29,
+      "temp_ms": 32.181,
+      "overhead_pct": 32.5,
+      "h3_pass": true
+    }
+  ]
+}
