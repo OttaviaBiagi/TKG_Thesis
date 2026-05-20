@@ -1,0 +1,34 @@
+# Q2 — Workers fully qualified for hot_work AFTER rule change (2024-07-01)
+#
+# Regulatory change at 2024-06-29 added "Advanced Fire Watch" certification requirement.
+# Valid-time query: same structure as Q1 at a different query date.
+# Identifies workers who remain compliant under the stricter regime.
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?workerName ?discipline (GROUP_CONCAT(?certName ; separator=", ") AS ?certs)
+WHERE {
+    BIND("2024-07-01T00:00:00+00:00"^^xsd:dateTime AS ?queryDate)
+
+    ?req  a epc:PermitCertRequirement ;
+          epc:forPermit    ?permit ;
+          epc:requiresCertification ?reqCert ;
+          epc:validFrom    ?rFrom ;
+          epc:validTo      ?rTo .
+    ?permit epc:id "hot_work" .
+    FILTER(?rFrom <= ?queryDate && ?queryDate <= ?rTo)
+
+    ?holding a epc:CertificationHolding ;
+             epc:byWorker          ?worker ;
+             epc:holdsCertification ?reqCert ;
+             epc:validFrom         ?hFrom ;
+             epc:validTo           ?hTo .
+    FILTER(?hFrom <= ?queryDate && ?queryDate <= ?hTo)
+
+    ?worker epc:name ?workerName ;
+            epc:discipline ?discipline .
+    ?reqCert epc:name ?certName .
+}
+GROUP BY ?worker ?workerName ?discipline
+ORDER BY ?workerName

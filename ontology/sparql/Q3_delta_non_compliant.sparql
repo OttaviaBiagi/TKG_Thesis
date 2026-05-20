@@ -1,0 +1,51 @@
+# Q3 — Delta: workers who became non-compliant after the rule change
+#
+# Expressiveness demonstration: this query joins TWO temporal slices of the same
+# permit requirement relation in a single SPARQL SELECT using named subgraphs.
+# In Cypher (temporal_queries.cypher Q3) this requires 6 WITH steps and
+# separate MATCH blocks — a clear expressiveness gap.
+#
+# SPARQL strategy: use NOT EXISTS to find workers who were in Q1 but not in Q2.
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?workerName ?discipline ?missingCertName
+WHERE {
+    BIND("2024-06-28T00:00:00+00:00"^^xsd:dateTime AS ?before)
+    BIND("2024-07-01T00:00:00+00:00"^^xsd:dateTime AS ?after)
+
+    # Worker was qualified BEFORE the change
+    ?req1 a epc:PermitCertRequirement ;
+          epc:forPermit ?permit ;
+          epc:requiresCertification ?cert1 ;
+          epc:validFrom ?r1From ; epc:validTo ?r1To .
+    ?permit epc:id "hot_work" .
+    FILTER(?r1From <= ?before && ?before <= ?r1To)
+
+    ?h1 a epc:CertificationHolding ;
+        epc:byWorker ?worker ;
+        epc:holdsCertification ?cert1 ;
+        epc:validFrom ?h1From ; epc:validTo ?h1To .
+    FILTER(?h1From <= ?before && ?before <= ?h1To)
+
+    # New requirement added AFTER the change that the worker lacks
+    ?req2 a epc:PermitCertRequirement ;
+          epc:forPermit ?permit ;
+          epc:requiresCertification ?missingCert ;
+          epc:validFrom ?r2From ; epc:validTo ?r2To .
+    FILTER(?r2From <= ?after && ?after <= ?r2To)
+
+    FILTER NOT EXISTS {
+        ?h2 a epc:CertificationHolding ;
+            epc:byWorker ?worker ;
+            epc:holdsCertification ?missingCert ;
+            epc:validFrom ?h2From ; epc:validTo ?h2To .
+        FILTER(?h2From <= ?after && ?after <= ?h2To)
+    }
+
+    ?worker epc:name ?workerName ;
+            epc:discipline ?discipline .
+    ?missingCert epc:name ?missingCertName .
+}
+ORDER BY ?workerName

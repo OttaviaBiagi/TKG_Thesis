@@ -1,0 +1,23 @@
+# Q4 — Bitemporal audit trail of hot_work certification rule changes
+#
+# True bitemporal query: returns BOTH valid-time (validFrom/validTo) AND
+# transaction-time (txTime) for each version of the REQUIRES_CERT relation.
+# This answers: "what did the system know, and since when did it know it?"
+#
+# Not expressible as a single-construct Cypher query without multi-step WITH chains.
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?certName ?validFrom ?validTo ?txTime
+WHERE {
+    ?req a epc:PermitCertRequirement ;
+         epc:forPermit ?permit ;
+         epc:requiresCertification ?cert ;
+         epc:validFrom ?validFrom ;
+         epc:validTo   ?validTo ;
+         epc:txTime    ?txTime .
+    ?permit epc:id "hot_work" .
+    ?cert   epc:name ?certName .
+}
+ORDER BY ?txTime ?validFrom

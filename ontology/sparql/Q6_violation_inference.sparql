@@ -1,0 +1,59 @@
+# Q6 — Compliance violation inference via OWL-2 property chain
+#
+# This query materialises epc:ComplianceViolation instances using SPARQL CONSTRUCT.
+# It traverses the full compliance chain in ONE query:
+#
+#   WorkerAssignment -> Step -> WorkPermit -> PermitCertRequirement -> Certification
+#                                                              vs.
+#   CertificationHolding (by same worker, at same time)
+#
+# In Cypher this chain requires 4+ MATCH clauses with complex WITH chaining
+# and a NOT ALL() predicate. SPARQL expresses it as a single graph pattern
+# with NOT EXISTS, exploiting the OWL-2 class hierarchy.
+#
+# The CONSTRUCT form materialises new epc:ComplianceViolation triples that
+# can then be asserted back into the graph for downstream reasoning.
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+CONSTRUCT {
+    ?assignment a epc:ComplianceViolation ;
+                epc:assignedWorker ?worker ;
+                epc:assignedToStep ?step ;
+                epc:missingCertification ?reqCert ;
+                epc:validFrom ?aFrom ;
+                epc:validTo   ?aTo .
+}
+WHERE {
+    # Worker assignment window
+    ?assignment a epc:WorkerAssignment ;
+                epc:assignedWorker ?worker ;
+                epc:assignedToStep ?step ;
+                epc:validFrom      ?aFrom ;
+                epc:validTo        ?aTo .
+
+    # Step requires a work permit
+    ?step epc:requiresPermit ?permit .
+
+    # That permit requires a certification during the assignment window
+    ?req a epc:PermitCertRequirement ;
+         epc:forPermit    ?permit ;
+         epc:requiresCertification ?reqCert ;
+         epc:validFrom    ?rFrom ;
+         epc:validTo      ?rTo .
+
+    # Requirement overlaps with assignment window
+    FILTER(?rFrom <= ?aTo && ?rTo >= ?aFrom)
+
+    # Worker does NOT hold the required certification during assignment window
+    FILTER NOT EXISTS {
+        ?holding a epc:CertificationHolding ;
+                 epc:byWorker          ?worker ;
+                 epc:holdsCertification ?reqCert ;
+                 epc:validFrom         ?hFrom ;
+                 epc:validTo           ?hTo .
+        FILTER(?hFrom <= ?aFrom && ?aTo <= ?hTo)
+    }
+}

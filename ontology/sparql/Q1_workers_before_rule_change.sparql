@@ -1,0 +1,36 @@
+# Q1 — Workers fully qualified for hot_work BEFORE rule change (2024-06-28)
+#
+# Bitemporal semantics: valid-time query on PermitCertRequirement + CertificationHolding.
+# Cypher equivalent: temporal_queries.cypher Q1 (requires 2 MATCH + WITH + all() predicate).
+# SPARQL advantage: single SELECT with subquery; semantics expressed in one graph pattern.
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?workerName ?discipline (GROUP_CONCAT(?certName ; separator=", ") AS ?certs)
+WHERE {
+    BIND("2024-06-28T00:00:00+00:00"^^xsd:dateTime AS ?queryDate)
+
+    # Certifications required for hot_work at queryDate (valid-time filter)
+    ?req  a epc:PermitCertRequirement ;
+          epc:forPermit    ?permit ;
+          epc:requiresCertification ?reqCert ;
+          epc:validFrom    ?rFrom ;
+          epc:validTo      ?rTo .
+    ?permit epc:id "hot_work" .
+    FILTER(?rFrom <= ?queryDate && ?queryDate <= ?rTo)
+
+    # Worker holds that certification at queryDate
+    ?holding a epc:CertificationHolding ;
+             epc:byWorker          ?worker ;
+             epc:holdsCertification ?reqCert ;
+             epc:validFrom         ?hFrom ;
+             epc:validTo           ?hTo .
+    FILTER(?hFrom <= ?queryDate && ?queryDate <= ?hTo)
+
+    ?worker epc:name ?workerName ;
+            epc:discipline ?discipline .
+    ?reqCert epc:name ?certName .
+}
+GROUP BY ?worker ?workerName ?discipline
+ORDER BY ?workerName

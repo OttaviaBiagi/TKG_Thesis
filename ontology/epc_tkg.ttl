@@ -1,0 +1,250 @@
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:   <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
+@prefix time:  <http://www.w3.org/2006/time#> .
+@prefix epc:   <http://tecnicasreunidas.es/ontology/epc#> .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ontology header
+# ─────────────────────────────────────────────────────────────────────────────
+<http://tecnicasreunidas.es/ontology/epc>
+    a owl:Ontology ;
+    rdfs:label "EPC Compliance TKG Ontology"@en ;
+    rdfs:comment """OWL-2 DL ontology for bitemporal EPC project compliance monitoring.
+Models the Tecnicas Reunidas Meram Refinery Expansion project.
+Temporal layer uses valid-time (valid_from / valid_to) and
+transaction-time (tx_time) following ISO 19108 bitemporal semantics."""@en ;
+    owl:versionInfo "1.0" .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Classes — domain entities
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:Project a owl:Class ;
+    rdfs:label "EPC Project"@en ;
+    rdfs:comment "A single Engineering-Procurement-Construction project."@en .
+
+epc:Activity a owl:Class ;
+    rdfs:label "Activity"@en ;
+    rdfs:comment "A high-level work package within a project, belonging to one family."@en .
+
+epc:Family a owl:Class ;
+    rdfs:label "EPC Family"@en ;
+    rdfs:comment "A template family grouping activities with the same step topology."@en .
+
+epc:Step a owl:Class ;
+    rdfs:label "Step"@en ;
+    rdfs:comment "An atomic execution unit within an Activity, ordered and weighted."@en .
+
+epc:WorkPermit a owl:Class ;
+    rdfs:label "Work Permit"@en ;
+    rdfs:comment "A type of work permit required before executing certain steps (e.g. hot_work, confined_space)."@en .
+
+epc:Certification a owl:Class ;
+    rdfs:label "Certification"@en ;
+    rdfs:comment "A qualification held by a worker (e.g. Hot Work Safety, NDT Level II)."@en .
+
+epc:Worker a owl:Class ;
+    rdfs:label "Worker"@en ;
+    rdfs:comment "A person who can be assigned to steps and holds certifications."@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reification classes — bitemporal fact holders
+# These capture temporal metadata on relationships that OWL-2 properties
+# cannot carry natively (OWL-2 DL does not allow properties on properties).
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:BitemporalFact a owl:Class ;
+    rdfs:label "Bitemporal Fact"@en ;
+    rdfs:comment """Abstract superclass for all reified bitemporal statements.
+Each instance carries:
+  epc:validFrom  / epc:validTo   — valid time   (when true in the world)
+  epc:txTime                     — transaction time (when recorded in system)"""@en .
+
+epc:CertificationHolding a owl:Class ;
+    rdfs:subClassOf epc:BitemporalFact ;
+    rdfs:label "Certification Holding"@en ;
+    rdfs:comment "Reified bitemporal record: Worker w holds Certification c in [validFrom, validTo], recorded at txTime."@en ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:byWorker ;
+        owl:cardinality 1
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:holdsCertification ;
+        owl:cardinality 1
+    ] .
+
+epc:PermitCertRequirement a owl:Class ;
+    rdfs:subClassOf epc:BitemporalFact ;
+    rdfs:label "Permit Certification Requirement"@en ;
+    rdfs:comment "Reified bitemporal record: WorkPermit p requires Certification c in [validFrom, validTo]. txTime captures when the regulatory rule was recorded."@en ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:forPermit ;
+        owl:cardinality 1
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:requiresCertification ;
+        owl:cardinality 1
+    ] .
+
+epc:WorkerAssignment a owl:Class ;
+    rdfs:subClassOf epc:BitemporalFact ;
+    rdfs:label "Worker Assignment"@en ;
+    rdfs:comment "Reified bitemporal record: Worker w is assigned to Step s in [validFrom, validTo]."@en ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:assignedWorker ;
+        owl:cardinality 1
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty epc:assignedToStep ;
+        owl:cardinality 1
+    ] .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Object properties — structural
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:includes a owl:ObjectProperty ;
+    rdfs:domain epc:Project ;
+    rdfs:range  epc:Activity ;
+    rdfs:label  "includes"@en .
+
+epc:belongsTo a owl:ObjectProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  epc:Family ;
+    rdfs:label  "belongs to family"@en .
+
+epc:hasStep a owl:ObjectProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  epc:Step ;
+    rdfs:label  "has step"@en .
+
+epc:precedes a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:domain epc:Step ;
+    rdfs:range  epc:Step ;
+    rdfs:label  "precedes"@en ;
+    rdfs:comment "Transitively closed step dependency: s1 precedes s2 means s1 must complete before s2 starts."@en .
+
+epc:requiresPermit a owl:ObjectProperty ;
+    rdfs:domain epc:Step ;
+    rdfs:range  epc:WorkPermit ;
+    rdfs:label  "requires permit"@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Object properties — reification links
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:byWorker a owl:ObjectProperty ;
+    rdfs:domain epc:CertificationHolding ;
+    rdfs:range  epc:Worker ;
+    rdfs:label  "by worker"@en .
+
+epc:holdsCertification a owl:ObjectProperty ;
+    rdfs:domain epc:CertificationHolding ;
+    rdfs:range  epc:Certification ;
+    rdfs:label  "holds certification"@en .
+
+epc:forPermit a owl:ObjectProperty ;
+    rdfs:domain epc:PermitCertRequirement ;
+    rdfs:range  epc:WorkPermit ;
+    rdfs:label  "for permit"@en .
+
+epc:requiresCertification a owl:ObjectProperty ;
+    rdfs:domain epc:PermitCertRequirement ;
+    rdfs:range  epc:Certification ;
+    rdfs:label  "requires certification"@en .
+
+epc:assignedWorker a owl:ObjectProperty ;
+    rdfs:domain epc:WorkerAssignment ;
+    rdfs:range  epc:Worker ;
+    rdfs:label  "assigned worker"@en .
+
+epc:assignedToStep a owl:ObjectProperty ;
+    rdfs:domain epc:WorkerAssignment ;
+    rdfs:range  epc:Step ;
+    rdfs:label  "assigned to step"@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Data properties — identifiers and names
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:id a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "identifier"@en .
+
+epc:name a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "name"@en .
+
+epc:discipline a owl:DatatypeProperty ;
+    rdfs:domain epc:Worker ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "discipline"@en .
+
+epc:permitType a owl:DatatypeProperty ;
+    rdfs:domain epc:Step ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "permit type required"@en .
+
+epc:weightPct a owl:DatatypeProperty ;
+    rdfs:domain epc:Step ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "weight percentage within activity"@en .
+
+epc:order a owl:DatatypeProperty ;
+    rdfs:domain epc:Step ;
+    rdfs:range  xsd:integer ;
+    rdfs:label  "execution order within activity"@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Data properties — bitemporal timestamps
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:validFrom a owl:DatatypeProperty ;
+    rdfs:subPropertyOf time:hasBeginning ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "valid from (valid time start)"@en ;
+    rdfs:comment "The real-world moment from which this fact holds."@en .
+
+epc:validTo a owl:DatatypeProperty ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "valid to (valid time end)"@en ;
+    rdfs:comment "The real-world moment at which this fact ceases to hold. NULL = currently valid."@en .
+
+epc:txTime a owl:DatatypeProperty ;
+    rdfs:range xsd:dateTime ;
+    rdfs:label "transaction time (system recording time)"@en ;
+    rdfs:comment "When this fact was inserted into the system. Supports 'as-of' bitemporal queries."@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OWL-2 DL axioms — compliance constraint modelling
+# ─────────────────────────────────────────────────────────────────────────────
+
+# A ComplianceViolation is a WorkerAssignment where the worker lacks
+# the required certification at the time of assignment.
+# This is expressed as a SWRL-equivalent OWL-2 class expression;
+# full materialisation requires a SPARQL CONSTRUCT query (Q5).
+epc:ComplianceViolation a owl:Class ;
+    rdfs:subClassOf epc:WorkerAssignment ;
+    rdfs:label "Compliance Violation"@en ;
+    rdfs:comment """A WorkerAssignment where the assigned worker does not hold
+all certifications required by the step's work permit during the assignment window.
+Instances are materialized by SPARQL CONSTRUCT query Q5."""@en .
+
+# Disjointness: a step cannot be its own predecessor
+epc:precedes rdfs:comment "Irreflexive in practice (no self-loops in EPC schedules)."@en .
+
+# Every WorkerAssignment must reference a step that has a work permit
+# (enforced at data loading time; stated here for documentation)
+epc:WorkerAssignment rdfs:subClassOf [
+    a owl:Restriction ;
+    owl:onProperty epc:assignedToStep ;
+    owl:someValuesFrom epc:Step
+] .

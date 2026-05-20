@@ -1,0 +1,46 @@
+# Q5 — True bitemporal "as-of" query (unique to OWL-2/SPARQL layer)
+#
+# Question: "What did the system believe about worker certifications
+#            AS OF transaction-time T1, for the real-world period T2?"
+#
+# This is the canonical bitemporal query requiring BOTH dimensions:
+#   - valid-time filter:       ?validFrom <= T2 <= ?validTo
+#   - transaction-time filter: ?txTime   <= T1
+#
+# Expressive gap: Cypher has no native transaction-time axis. This query
+# is NOT expressible in standard Cypher without additional infrastructure.
+# It requires at least 3 steps: (1) filter by tx_time, (2) reconstruct
+# valid-time state, (3) evaluate compliance. SPARQL handles it in one query.
+#
+# Example: "What certifications did the system know about on 2024-06-15 (txTime),
+#           that were valid on 2024-05-01 (validTime)?"
+
+PREFIX epc:  <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?workerName ?certName ?validFrom ?validTo ?txTime
+WHERE {
+    # Transaction-time anchor: what the system knew as of this moment
+    # (tx_time in dataset is 2026-05-06 — snapshot just before any future updates)
+    BIND("2026-06-01T00:00:00+00:00"^^xsd:dateTime AS ?asOfTxTime)
+
+    # Valid-time anchor: the real-world period of interest
+    # (query: which certifications were valid on 2024-05-01 per system state at txTime?)
+    BIND("2024-05-01T00:00:00+00:00"^^xsd:dateTime AS ?validAtDate)
+
+    ?holding a epc:CertificationHolding ;
+             epc:byWorker          ?worker ;
+             epc:holdsCertification ?cert ;
+             epc:validFrom         ?validFrom ;
+             epc:validTo           ?validTo ;
+             epc:txTime            ?txTime .
+
+    # Bitemporal filter: BOTH dimensions applied simultaneously
+    FILTER(?txTime   <= ?asOfTxTime)     # transaction-time: recorded before snapshot
+    FILTER(?validFrom <= ?validAtDate)    # valid-time: fact holds at query date
+    FILTER(?validAtDate <= ?validTo)
+
+    ?worker epc:name ?workerName .
+    ?cert   epc:name ?certName .
+}
+ORDER BY ?workerName ?certName
