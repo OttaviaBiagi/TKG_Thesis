@@ -36,7 +36,8 @@ WARMUP  = 10     # discarded warmup runs
 
 # Date anchors (rule change was 2024-06-29)
 DATE_PRE  = "2024-06-01T00:00:00+00:00"   # valid-time before rule change
-DATE_POST = "2024-07-01T00:00:00+00:00"   # valid-time after rule change
+DATE_POST = "2024-07-01T00:00:00+00:00"   # valid-time after rule change (P1-P4)
+DATE_END  = "2025-07-01T00:00:00+00:00"   # project end — covers all ASSIGNED_TO assignments (P5)
 TX_SNAP   = "2026-06-01T00:00:00+00:00"   # tx-time snapshot (captures all records)
 
 OUT_FILE  = Path("experiments/UseCase4/results/query_benchmark.json")
@@ -167,7 +168,7 @@ QUERIES = [
               AND (r.valid_to  IS NULL OR r.valid_to  >= $check_date)
             RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert
         """,
-        "params": {"check_date": DATE_POST},
+        "params": {"check_date": DATE_END},
     },
 
     # ── Pair 4: Bitemporal as-of (valid-time + tx-time axes) ───────────────────

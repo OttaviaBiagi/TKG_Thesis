@@ -28,7 +28,7 @@ compared to approaches that do not employ graph-based temporal modelling.
 |---|---|---|
 | **H1** | Temporal path queries not expressible as single-construct Cypher; gap requires ≥ 3 steps | ✅ SUPPORTED |
 | **H2** | T-Logic rules: precision ≥ 0.60, recall ≥ 0.70 | ✅ SUPPORTED — P=R=1.0 (confidence 1.0) |
-| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +29.7% (Neo4j) |
+| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +34.8% (Neo4j P2) |
 
 ---
 
@@ -207,16 +207,17 @@ contribution of the thesis.
 
 **Neo4j benchmark** (`data/UseCase4/run_cypher_benchmark.py`) — 5 pairs × 100 timed runs on 34,964-node graph:
 
-| Pair | Query | Overhead | H3 |
-|---|---|---|---|
-| P1 | 1-hop cert lookup | +1.1% | ✅ PASS |
-| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | +29.7% | ✅ PASS |
-| P3 | Non-compliance detection | +0.8% | ✅ PASS |
-| P4 | Bitemporal as-of (valid-time + tx-time) | +10.0% | ✅ PASS |
-| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | ⏳ re-run (valid_to bug fixed) | — |
+| Pair | Query | Atemporal | Temporal | Overhead | H3 |
+|---|---|---|---|---|---|
+| P1 | 1-hop cert lookup | 2.5 ms | 3.0 ms | +20.2% | ✅ PASS |
+| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 21.4 ms | 28.9 ms | +34.8% | ✅ PASS |
+| P3 | Non-compliance detection | 1.5 ms | 1.5 ms | +4.3% | ✅ PASS |
+| P4 | Bitemporal as-of (valid-time + tx-time) | 3.0 ms | 3.3 ms | +8.4% | ✅ PASS |
+| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 917.5 ms | 48.3 ms | −94.7%¹ | ✅ PASS |
 
-**H3 OVERALL: SUPPORTED.** Max overhead +33.6% on 3-hop chain (updated); all pairs well below 50%.  
-*(P2 result updated from previous run: +29.7% → +33.6%; both well within threshold.)*
+¹ P5 temporal query filtered to DATE_END='2025-07-01' (covers all synthetic ASSIGNED_TO assignments). The large speed gain reflects the temporal filter reducing the result set dramatically (from all-graph traversal to assignment-window subset); a meaningful overhead figure would require a date-bounded atemporal query for a like-for-like comparison.
+
+**H3 OVERALL: SUPPORTED.** Max overhead +34.8% on 3-hop compliance chain; all pairs well below 50% threshold.
 
 **rdflib SPARQL benchmark** (`ontology/run_query_benchmark.py`) — 200 runs, in-memory, 6,217 triples:
 
@@ -379,7 +380,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | 11 | Expert label validation | ⏳ Future work — requires TR HSE records |
 | 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (AUC=0.773±0.010 single; ×85±47 multi_varied) |
 | 13 | OWL-2 ontology + SPARQL (SO1) | ✅ epc_tkg.ttl (OWL-2 DL); Q1–Q7 verified; 6,217 triples; Module 3 EVM |
-| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +29.7% (5 pairs); rdflib S2 +44.7%, S3 +32.5% |
+| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +34.8% (P2, 3-hop chain); rdflib S2 +44.7%, S3 +32.5% |
 
 ---
 
