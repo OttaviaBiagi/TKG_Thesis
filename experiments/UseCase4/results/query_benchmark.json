@@ -1,0 +1,210 @@
+{
+  "benchmark": "SO4_H3_temporal_overhead",
+  "neo4j_uri": "bolt://localhost:7687",
+  "n_runs": 100,
+  "warmup": 10,
+  "date_anchors": {
+    "date_pre": "2024-06-01T00:00:00+00:00",
+    "date_post": "2024-07-01T00:00:00+00:00",
+    "tx_snap": "2026-06-01T00:00:00+00:00"
+  },
+  "queries": {
+    "QA1": {
+      "id": "QA1",
+      "label": "1-hop cert lookup \u2014 atemporal",
+      "pair": "P1",
+      "temporal": false,
+      "cypher": "\n            MATCH (w:Worker)-[:HAS_CERT]->(c:Certification)\n            RETURN w.id AS worker, c.id AS cert\n        ",
+      "params": {},
+      "metrics": {
+        "mean_ms": 3.658,
+        "std_ms": 1.196,
+        "median_ms": 3.321,
+        "min_ms": 2.072,
+        "max_ms": 8.837,
+        "rows": 144,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT1": {
+      "id": "QT1",
+      "label": "1-hop cert lookup \u2014 valid-time filter",
+      "pair": "P1",
+      "temporal": true,
+      "cypher": "\n            MATCH (w:Worker)-[h:HAS_CERT]->(c:Certification)\n            WHERE h.valid_from <= $check_date AND (h.valid_to IS NULL OR h.valid_to >= $check_date)\n            RETURN w.id AS worker, c.id AS cert\n        ",
+      "params": {
+        "check_date": "2024-07-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 3.699,
+        "std_ms": 1.989,
+        "median_ms": 3.248,
+        "min_ms": 1.894,
+        "max_ms": 19.262,
+        "rows": 140,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QA2": {
+      "id": "QA2",
+      "label": "3-hop compliance chain \u2014 atemporal",
+      "pair": "P2",
+      "temporal": false,
+      "cypher": "\n            MATCH (w:Worker)-[:HAS_CERT]->(c:Certification)\n                  <-[:REQUIRES_CERT]-(wp:WorkPermit)\n                  <-[:REQUIRES_PERMIT]-(s:Step)\n            RETURN w.id AS worker, wp.id AS permit, c.id AS cert, count(s) AS steps\n        ",
+      "params": {},
+      "metrics": {
+        "mean_ms": 21.888,
+        "std_ms": 2.346,
+        "median_ms": 21.491,
+        "min_ms": 18.957,
+        "max_ms": 34.804,
+        "rows": 128,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT2": {
+      "id": "QT2",
+      "label": "3-hop compliance chain \u2014 valid-time filter",
+      "pair": "P2",
+      "temporal": true,
+      "cypher": "\n            MATCH (w:Worker)-[h:HAS_CERT]->(c:Certification)\n                  <-[r:REQUIRES_CERT]-(wp:WorkPermit)\n                  <-[:REQUIRES_PERMIT]-(s:Step)\n            WHERE h.valid_from  <= $check_date\n              AND (h.valid_to   IS NULL OR h.valid_to >= $check_date)\n              AND r.valid_from  <= $check_date\n              AND (r.valid_to   IS NULL OR r.valid_to >= $check_date)\n            RETURN w.id AS worker, wp.id AS permit, c.id AS cert, count(s) AS steps\n        ",
+      "params": {
+        "check_date": "2024-07-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 28.399,
+        "std_ms": 2.679,
+        "median_ms": 27.64,
+        "min_ms": 25.118,
+        "max_ms": 42.521,
+        "rows": 124,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QA3": {
+      "id": "QA3",
+      "label": "Non-compliance detection \u2014 atemporal",
+      "pair": "P3",
+      "temporal": false,
+      "cypher": "\n            MATCH (wp:WorkPermit {id:'hot_work'})-[:REQUIRES_CERT]->(req:Certification)\n            WITH collect(req.id) AS required\n            MATCH (w:Worker)\n            WITH w, required,\n                 [(w)-[:HAS_CERT]->(c:Certification) | c.id] AS held\n            WHERE ANY(r IN required WHERE NOT r IN held)\n            RETURN w.id AS worker, w.name AS name\n        ",
+      "params": {},
+      "metrics": {
+        "mean_ms": 1.916,
+        "std_ms": 0.876,
+        "median_ms": 1.644,
+        "min_ms": 1.047,
+        "max_ms": 6.934,
+        "rows": 45,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT3": {
+      "id": "QT3",
+      "label": "Non-compliance detection \u2014 valid-time filter",
+      "pair": "P3",
+      "temporal": true,
+      "cypher": "\n            MATCH (wp:WorkPermit {id:'hot_work'})-[r:REQUIRES_CERT]->(req:Certification)\n            WHERE r.valid_from <= $check_date\n              AND (r.valid_to  IS NULL OR r.valid_to >= $check_date)\n            WITH collect(req.id) AS required\n            MATCH (w:Worker)\n            WITH w, required,\n                 [(w)-[h:HAS_CERT]->(c:Certification)\n                  WHERE h.valid_from <= $check_date\n                    AND (h.valid_to IS NULL OR h.valid_to >= $check_date) | c.id] AS held\n            WHERE ANY(r IN required WHERE NOT r IN held)\n            RETURN w.id AS worker, w.name AS name\n        ",
+      "params": {
+        "check_date": "2024-07-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 1.931,
+        "std_ms": 1.036,
+        "median_ms": 1.707,
+        "min_ms": 0.979,
+        "max_ms": 7.506,
+        "rows": 45,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT4_single": {
+      "id": "QT4_single",
+      "label": "Cert lookup \u2014 valid-time only (single axis)",
+      "pair": "P4",
+      "temporal": true,
+      "cypher": "\n            MATCH (w:Worker)-[h:HAS_CERT]->(c:Certification)\n            WHERE h.valid_from <= $valid_date\n              AND (h.valid_to  IS NULL OR h.valid_to >= $valid_date)\n            RETURN w.id, c.id, h.valid_from, h.valid_to\n        ",
+      "params": {
+        "valid_date": "2024-06-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 3.075,
+        "std_ms": 1.002,
+        "median_ms": 2.702,
+        "min_ms": 2.118,
+        "max_ms": 7.87,
+        "rows": 141,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT4_bitemporal": {
+      "id": "QT4_bitemporal",
+      "label": "Cert lookup \u2014 bitemporal as-of (both axes)",
+      "pair": "P4",
+      "temporal": true,
+      "cypher": "\n            MATCH (w:Worker)-[h:HAS_CERT]->(c:Certification)\n            WHERE h.valid_from <= $valid_date\n              AND (h.valid_to  IS NULL OR h.valid_to >= $valid_date)\n              AND h.tx_time   <= $tx_snap\n            RETURN w.id, c.id, h.valid_from, h.valid_to, h.tx_time\n        ",
+      "params": {
+        "valid_date": "2024-06-01T00:00:00+00:00",
+        "tx_snap": "2026-06-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 3.382,
+        "std_ms": 0.957,
+        "median_ms": 3.117,
+        "min_ms": 2.214,
+        "max_ms": 6.647,
+        "rows": 141,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    }
+  },
+  "overhead": [
+    {
+      "pair": "P1",
+      "desc": "1-hop cert lookup",
+      "base_id": "QA1",
+      "temp_id": "QT1",
+      "base_ms": 3.658,
+      "temp_ms": 3.699,
+      "overhead_pct": 1.1,
+      "h3_pass": true
+    },
+    {
+      "pair": "P2",
+      "desc": "3-hop compliance chain",
+      "base_id": "QA2",
+      "temp_id": "QT2",
+      "base_ms": 21.888,
+      "temp_ms": 28.399,
+      "overhead_pct": 29.7,
+      "h3_pass": true
+    },
+    {
+      "pair": "P3",
+      "desc": "Non-compliance detection",
+      "base_id": "QA3",
+      "temp_id": "QT3",
+      "base_ms": 1.916,
+      "temp_ms": 1.931,
+      "overhead_pct": 0.8,
+      "h3_pass": true
+    },
+    {
+      "pair": "P4",
+      "desc": "Single-axis vs bitemporal as-of",
+      "base_id": "QT4_single",
+      "temp_id": "QT4_bitemporal",
+      "base_ms": 3.075,
+      "temp_ms": 3.382,
+      "overhead_pct": 10.0,
+      "h3_pass": true
+    }
+  ]
+}
