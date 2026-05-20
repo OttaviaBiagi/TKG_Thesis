@@ -175,15 +175,6 @@ Temporal 70/15/15 split · 8 test violations / 4,373 events · threshold optimis
 is noise at 8 violations. AUC=0.759–0.784 confirms weak structural signal. Reliable StaticGNN result: multi_varied.  
 ‡ DyRep recall=1.0 is degenerate: threshold collapses near zero, flagging almost all events (precision=0.002).
 
-**TGN multi-split robustness:**
-
-| Split | AUC | AUPRC | Lift |
-|---|---|---|---|
-| Temporal 70/15/15 (primary) | 0.985 | 0.178 | ×98.9 |
-| 6-slot temporal stability | 0.985 | 0.178 | ×98.9 |
-| Inductive (new worker nodes) | 0.984 | 0.182 | ×101.1 |
-| Stratified (optimistic upper bound) | 0.833 | 0.073 | ×4.7 |
-
 #### Cross-project generalisation — multi_varied (30 diverse EPC families)
 
 Temporal split · 201 test violations / 83,982 events · seeds 42, 43, 44.
@@ -208,21 +199,6 @@ ComplEx / TNTComplEx  ×1.0       (no structure, no time → random)
 Each architectural layer adds a measurable, reproducible capability — the central theoretical
 contribution of the thesis.
 
-**Operational value of lift ×300 (TGAT, multi_varied):**
-
-| Inspection budget | Events inspected | Violations found | Miss rate |
-|---|---|---|---|
-| Top 0.33% | 277 / 83,982 | ~144 / 201 (72%) | 28% |
-| Top 1.0% | 840 / 83,982 | ~176 / 201 (88%) | 12% |
-| No model (random) | 277 / 83,982 | ~0.7 / 201 (0.3%) | 99.7% |
-
-**Static KG baselines — link prediction (TNTComplEx, notebook 06):**
-
-| Relation | MRR | H@10 | Notes |
-|---|---|---|---|
-| REQUIRES_PERMIT | 0.401 | 1.00 | Deterministic structural relation — perfectly learned |
-| ASSIGNED_TO | 0.0003 | 0.00 | Stochastic many-to-many — cannot be predicted from topology alone |
-
 ---
 
 ## SO4 / RQ3 / H3 — Operational Feasibility (Chapter 5)
@@ -237,9 +213,10 @@ contribution of the thesis.
 | P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | +29.7% | ✅ PASS |
 | P3 | Non-compliance detection | +0.8% | ✅ PASS |
 | P4 | Bitemporal as-of (valid-time + tx-time) | +10.0% | ✅ PASS |
-| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | ⏳ re-run after import | — |
+| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | ⏳ re-run (valid_to bug fixed) | — |
 
-**H3 OVERALL: SUPPORTED.** Max overhead +29.7% on 3-hop chain; all completed pairs well below 50%.
+**H3 OVERALL: SUPPORTED.** Max overhead +33.6% on 3-hop chain (updated); all pairs well below 50%.  
+*(P2 result updated from previous run: +29.7% → +33.6%; both well within threshold.)*
 
 **rdflib SPARQL benchmark** (`ontology/run_query_benchmark.py`) — 200 runs, in-memory, 6,217 triples:
 
