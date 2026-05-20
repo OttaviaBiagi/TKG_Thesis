@@ -27,6 +27,8 @@ QUERIES = [
      "Bitemporal 'as-of' query: system knowledge at txTime, for validTime"),
     ("Q6", "Q6_violation_inference.sparql",
      "CONSTRUCT: materialise ComplianceViolation instances via OWL-2 pattern"),
+    ("Q7", "Q7_evm_spi_atrisk.sparql",
+     "EVM Module 3: activities with SPI < 0.9 (critical schedule slippage)"),
 ]
 
 

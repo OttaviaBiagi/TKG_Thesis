@@ -1,0 +1,32 @@
+# Q7 — EVM: Schedule Performance Index (SPI) — at-risk activities
+#
+# Module 3 (Project Performance) query: finds activities where SPI < 0.9,
+# indicating critical schedule slippage risk.
+#
+# SPI = EV / PV = earned_hours / estimated_hours
+# SPI < 1.0 → behind schedule
+# SPI < 0.9 → critical risk threshold (standard EPC practice)
+#
+# This query demonstrates that OWL-2 ontological properties enable
+# deductive inference over EVM performance indicators — a capability
+# not available in the raw Neo4j property graph without explicit
+# performance fields on activity nodes.
+
+PREFIX epc: <http://tecnicasreunidas.es/ontology/epc#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+SELECT ?name ?discipline ?area ?spi ?progressPct ?plannedValue ?earnedValue
+WHERE {
+    ?act a epc:Activity ;
+         epc:name         ?name ;
+         epc:SPI          ?spi ;
+         epc:plannedValue ?plannedValue ;
+         epc:earnedValue  ?earnedValue ;
+         epc:progressPct  ?progressPct .
+
+    OPTIONAL { ?act epc:discipline ?discipline }
+    OPTIONAL { ?act epc:area       ?area }
+
+    FILTER(?spi < 0.9)
+}
+ORDER BY ASC(?spi)

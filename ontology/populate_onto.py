@@ -167,6 +167,7 @@ print(f"  Workers: {len(workers)}  CertificationHoldings: {holding_count}")
 
 # ── Activities (subset: first 100) ────────────────────────────────────────────
 activities = dataset.get("activities", [])[:100]
+evm_count = 0
 for act in activities:
     actu = uri(f"activity_{act['id']}")
     g.add((actu, RDF.type,      EPC.Activity))
@@ -174,7 +175,36 @@ for act in activities:
     g.add((actu, EPC.name,      Literal(act.get("name", act["id"]))))
     g.add((actu, EPC.belongsTo, uri(f"family_{act.get('family', 'unknown')}")))
     g.add((proj, EPC.includes,  actu))
-print(f"  Activities loaded: {len(activities)}")
+
+    if act.get("discipline"):
+        g.add((actu, EPC.discipline, Literal(act["discipline"])))
+    if act.get("area"):
+        g.add((actu, EPC.area, Literal(act["area"])))
+    if act.get("cwp"):
+        g.add((actu, EPC.cwp, Literal(act["cwp"])))
+
+    # Module 3 — EVM indicators
+    pv = act.get("estimated_hours")
+    ev = act.get("earned_hours")
+    pp = act.get("progress_pct")
+    if pv is not None:
+        g.add((actu, EPC.plannedValue, Literal(round(float(pv), 2), datatype=XSD.decimal)))
+    if ev is not None:
+        g.add((actu, EPC.earnedValue,  Literal(round(float(ev), 2), datatype=XSD.decimal)))
+    if pp is not None:
+        g.add((actu, EPC.progressPct,  Literal(round(float(pp), 2), datatype=XSD.decimal)))
+    if pv and float(pv) > 0 and ev is not None:
+        spi = round(float(ev) / float(pv), 4)
+        g.add((actu, EPC.SPI, Literal(spi, datatype=XSD.decimal)))
+        evm_count += 1
+
+    # Bitemporal timestamps on activity
+    add_bitemporal(g, actu,
+                   valid_from=act.get("valid_from", PROJECT_START),
+                   valid_to=act.get("valid_to"),
+                   tx_time=act.get("tx_time", PROJECT_START))
+
+print(f"  Activities loaded: {len(activities)}  (EVM SPI computed: {evm_count})")
 
 # ── Steps (flat top-level list — subset: first 200) ───────────────────────────
 # Steps have: id, name, order, weight_pct, permit_type, activity_id, valid_from, valid_to

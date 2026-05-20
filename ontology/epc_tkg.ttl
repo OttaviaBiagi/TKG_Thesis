@@ -224,6 +224,53 @@ epc:txTime a owl:DatatypeProperty ;
     rdfs:comment "When this fact was inserted into the system. Supports 'as-of' bitemporal queries."@en .
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Module 3 — Project Performance (EVM)
+# Formalises Earned Value Management constructs as ontological properties,
+# enabling deductive inference over schedule performance indicators.
+# Data source: epc_dataset_real.json activity fields estimated_hours / earned_hours / progress_pct
+# ─────────────────────────────────────────────────────────────────────────────
+
+epc:plannedValue a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "Planned Value (PV)"@en ;
+    rdfs:comment "Budgeted hours for this activity (proxy for BAC). Source: estimated_hours."@en .
+
+epc:earnedValue a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "Earned Value (EV)"@en ;
+    rdfs:comment "Hours earned based on reported progress. Source: earned_hours."@en .
+
+epc:progressPct a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "Progress percentage"@en ;
+    rdfs:comment "Percentage completion of the activity (0–100). Source: progress_pct."@en .
+
+epc:SPI a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "Schedule Performance Index (SPI)"@en ;
+    rdfs:comment "SPI = EV / PV. SPI < 1.0 indicates schedule slippage; < 0.9 signals critical delay risk."@en .
+
+epc:CPI a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "Cost Performance Index (CPI)"@en ;
+    rdfs:comment "CPI = EV / AC. Requires actual cost data (not available in this dataset; reserved for future integration with TR cost management system)."@en .
+
+epc:area a owl:DatatypeProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "plant area"@en .
+
+epc:cwp a owl:DatatypeProperty ;
+    rdfs:domain epc:Activity ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "Construction Work Package (CWP)"@en .
+
+# ─────────────────────────────────────────────────────────────────────────────
 # OWL-2 DL axioms — compliance constraint modelling
 # ─────────────────────────────────────────────────────────────────────────────
 
