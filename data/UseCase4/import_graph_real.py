@@ -144,6 +144,46 @@ def load(session, dataset):
                  vf=cert['valid_from'], vt=cert['valid_to'], tx=cert['tx_time'])
     print(f"  Workers: {len(tx['workers'])}")
 
+    # ASSIGNED_TO — synthetic bitemporal relationships (mirrors OWL-2 WorkerAssignment nodes)
+    # Logic: workers holding the 3 base hot_work certs are assigned to the first 5
+    # post-rule-change hot_work steps each, creating the violation population
+    # detectable by compliance queries.
+    RULE_CHANGE_ISO = RULE_CHANGE.isoformat()
+    hot_steps_post = [
+        s for s in tx['steps']
+        if s.get('permit_type') == 'hot_work'
+        and (s.get('valid_from') or '') >= RULE_CHANGE_ISO
+    ][:50]
+
+    assign_rows = []
+    base_certs = {'Hot_Work_Safety', 'Fire_Watch', 'Welding_Certification'}
+    for w in tx['workers']:
+        cert_ids = {c['cert'].replace(' ', '_') for c in w.get('certifications', [])}
+        if not base_certs.issubset(cert_ids):
+            continue
+        for step in hot_steps_post[:5]:
+            vf = step.get('valid_from') or RULE_CHANGE_ISO
+            vt = step.get('valid_to') or vf
+            assign_rows.append({
+                'wid':        w['id'],
+                'sid':        step['id'],
+                'valid_from': vf,
+                'valid_to':   vt,
+                'tx_time':    vf,
+            })
+
+    for i in range(0, len(assign_rows), BATCH):
+        batch = assign_rows[i:i+BATCH]
+        session.run('''
+            UNWIND $rows AS r
+            MATCH (w:Worker {id:r.wid}), (s:Step {id:r.sid})
+            MERGE (w)-[a:ASSIGNED_TO]->(s)
+            SET a.valid_from = r.valid_from,
+                a.valid_to   = r.valid_to,
+                a.tx_time    = r.tx_time
+        ''', rows=batch)
+    print(f"  ASSIGNED_TO (synthetic): {len(assign_rows)}")
+
 
 if __name__ == '__main__':
     with open(DATA_FILE) as f:

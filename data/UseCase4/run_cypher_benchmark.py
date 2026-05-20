@@ -4,10 +4,11 @@ run_cypher_benchmark.py — SO4 / H3: Temporal query overhead measurement.
 Compares atemporal vs temporal Cypher queries on the live Neo4j TKG to test:
     H3: "Temporal query overhead < 50% relative to equivalent atemporal queries."
 
-4 query pairs, each run N_RUNS times (after WARMUP warmup runs):
+5 query pairs, each run N_RUNS times (after WARMUP warmup runs):
     QA1 / QT1 — 1-hop cert lookup
     QA2 / QT2 — 3-hop compliance chain (Step->Permit->Cert->Worker)
     QA3 / QT3 — 3-hop non-compliance detection (NOT ALL certs held)
+    QA5 / QT5 — 4-hop assignment chain via ASSIGNED_TO (Worker->Step->Permit->Cert)
     QA4 / QT4 — bitemporal as-of (valid-time + tx-time axes simultaneously)
 
 Results saved to experiments/UseCase4/results/query_benchmark.json.
@@ -137,6 +138,38 @@ QUERIES = [
         "params": {"check_date": DATE_POST},
     },
 
+    # ── Pair 5: 4-hop chain via ASSIGNED_TO (Worker→Step→Permit→Cert) ───────────
+    {
+        "id": "QA5",
+        "label": "4-hop assignment chain — atemporal",
+        "pair": "P5",
+        "temporal": False,
+        "cypher": """
+            MATCH (w:Worker)-[:ASSIGNED_TO]->(s:Step)
+                  -[:REQUIRES_PERMIT]->(wp:WorkPermit)
+                  -[:REQUIRES_CERT]->(c:Certification)
+            RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert
+        """,
+        "params": {},
+    },
+    {
+        "id": "QT5",
+        "label": "4-hop assignment chain — valid-time filter",
+        "pair": "P5",
+        "temporal": True,
+        "cypher": """
+            MATCH (w:Worker)-[a:ASSIGNED_TO]->(s:Step)
+                  -[:REQUIRES_PERMIT]->(wp:WorkPermit)
+                  -[r:REQUIRES_CERT]->(c:Certification)
+            WHERE a.valid_from <= $check_date
+              AND (a.valid_to  IS NULL OR a.valid_to  >= $check_date)
+              AND r.valid_from <= $check_date
+              AND (r.valid_to  IS NULL OR r.valid_to  >= $check_date)
+            RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert
+        """,
+        "params": {"check_date": DATE_POST},
+    },
+
     # ── Pair 4: Bitemporal as-of (valid-time + tx-time axes) ───────────────────
     {
         "id": "QT4_single",
@@ -226,10 +259,11 @@ def main():
 
     # ── Compute overhead per pair ──────────────────────────────────────────────
     pairs = {
-        "P1": ("QA1",        "QT1",          "1-hop cert lookup"),
-        "P2": ("QA2",        "QT2",          "3-hop compliance chain"),
-        "P3": ("QA3",        "QT3",          "Non-compliance detection"),
+        "P1": ("QA1",        "QT1",           "1-hop cert lookup"),
+        "P2": ("QA2",        "QT2",           "3-hop compliance chain"),
+        "P3": ("QA3",        "QT3",           "Non-compliance detection"),
         "P4": ("QT4_single", "QT4_bitemporal","Single-axis vs bitemporal as-of"),
+        "P5": ("QA5",        "QT5",           "4-hop assignment chain (ASSIGNED_TO)"),
     }
 
     overhead_table = []
