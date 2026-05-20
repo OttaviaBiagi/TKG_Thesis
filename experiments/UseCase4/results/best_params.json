@@ -26,6 +26,19 @@
     },
     "n_trials_completed": 20
   },
+  "TGAT_multi_varied": {
+    "model": "TGAT",
+    "dataset": "multi_varied",
+    "note": "No Optuna tuning performed — default hyperparameters used for all multi_varied runs",
+    "params": {
+      "embed_dim": 64,
+      "n_heads": 4,
+      "n_neighbors": 20,
+      "lr": 0.001,
+      "pos_weight_factor": 15.0,
+      "batch_size": 512
+    }
+  },
   "DyRep_single": {
     "model": "DyRep",
     "dataset": "single",
