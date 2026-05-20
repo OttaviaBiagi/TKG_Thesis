@@ -28,7 +28,7 @@ compared to approaches that do not employ graph-based temporal modelling.
 |---|---|---|
 | **H1** | Temporal path queries not expressible as single-construct Cypher; gap requires ≥ 3 steps | ✅ SUPPORTED |
 | **H2** | T-Logic rules: precision ≥ 0.60, recall ≥ 0.70 | ✅ SUPPORTED — P=R=1.0 (confidence 1.0) |
-| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +34.8% (Neo4j P2) |
+| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +37.2% (Neo4j P3); P5 pending DB cleanup |
 
 ---
 
@@ -56,7 +56,8 @@ Three-layer hybrid TKG architecture:
 | REQUIRES_CERT edges | 24 | Permit type → certification (bitemporal) |
 | HAS_CERT edges | 248 | Worker → certification (bitemporal) |
 | PRECEDES edges | 1,208 | Step precedence constraints |
-| ASSIGNED_TO edges | 29,150 | Worker → step assignments (event stream + Neo4j Layer 2) |
+| ASSIGNED_TO edges (Neo4j) | 55 | Synthetic bitemporal (Worker→Step, hot_work post-RC) |
+| ASSIGNED_TO events (stream) | 29,150 | Event stream in epc_events.json (Layer 3 — not in Neo4j) |
 | PERMIT_DENIED events | 449 | Violation rate: 1.54% |
 
 Data quality: **22 PASS / 0 FAIL / 3 WARN** — run `python tests/test_real_data.py`
@@ -210,15 +211,15 @@ contribution of the thesis.
 
 | Pair | Query | Atemporal | Temporal | Overhead | H3 |
 |---|---|---|---|---|---|
-| P1 | 1-hop cert lookup | 2.5 ms | 3.0 ms | +20.2% | ✅ PASS |
-| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 21.4 ms | 28.9 ms | +34.8% | ✅ PASS |
-| P3 | Non-compliance detection | 1.5 ms | 1.5 ms | +4.3% | ✅ PASS |
-| P4 | Bitemporal as-of (valid-time + tx-time) | 3.0 ms | 3.3 ms | +8.4% | ✅ PASS |
-| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 917.5 ms | 48.3 ms | −94.7%¹ | ✅ PASS |
+| P1 | 1-hop cert lookup | 3.5 ms | 3.4 ms | −3.5% | ✅ PASS |
+| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 24.9 ms | 32.4 ms | +30.3% | ✅ PASS |
+| P3 | Non-compliance detection | 1.3 ms | 1.8 ms | +37.2% | ✅ PASS |
+| P4 | Bitemporal as-of (valid-time + tx-time) | 3.4 ms | 3.5 ms | +3.8% | ✅ PASS |
+| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 1,039.5 ms | 56.7 ms | −94.5%¹ | ⚠ pending |
 
-¹ P5 temporal query filtered to DATE_END='2025-07-01' (covers all synthetic ASSIGNED_TO assignments). The large speed gain reflects the temporal filter reducing the result set dramatically (from all-graph traversal to assignment-window subset); a meaningful overhead figure would require a date-bounded atemporal query for a like-for-like comparison.
+¹ P5 QT5 returns 0 rows due to database contamination from previous runs (~22k extra ASSIGNED_TO edges without temporal properties). Fix: `MATCH ()-[r:ASSIGNED_TO]->() WHERE r.valid_from IS NULL DELETE r` in Neo4j, then re-import and re-run benchmark. P1–P4 are unaffected.
 
-**H3 OVERALL: SUPPORTED.** Max overhead +34.8% on 3-hop compliance chain; all pairs well below 50% threshold.
+**H3 OVERALL: SUPPORTED (P1–P4).** Max measured overhead +37.2% on non-compliance detection (P3); all four valid pairs well below 50% threshold.
 
 **rdflib SPARQL benchmark** (`ontology/run_query_benchmark.py`) — 200 runs, in-memory, 6,217 triples:
 
@@ -277,7 +278,7 @@ TKG_Thesis/
 │   ├── 03_critical_path.ipynb          # Critical path & bottleneck analysis
 │   ├── 04_dynamic_tkg.ipynb            # Event stream analysis
 │   ├── 06_tkg_models.ipynb             # TNTComplEx + RF/XGBoost baselines
-│   ├── 07_four_layer_tlogic.ipynb      # T-Logic rules + cascade risk (SO3/RQ2)
+│   ├── 07_tlogic_symbolic_reasoning.ipynb  # T-Logic rules + cascade + walk mining (SO3/RQ2)
 │   └── 08_model_benchmark_final.ipynb  # [MAIN] Full benchmark: all models × all splits
 │
 ├── experiments/UseCase4/
@@ -381,7 +382,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | 11 | Expert label validation | ⏳ Future work — requires TR HSE records |
 | 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (AUC=0.773±0.010 single; ×85±47 multi_varied) |
 | 13 | OWL-2 ontology + SPARQL (SO1) | ✅ epc_tkg.ttl (OWL-2 DL); Q1–Q7 verified; 6,217 triples; Module 3 EVM |
-| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +34.8% (P2, 3-hop chain); rdflib S2 +44.7%, S3 +32.5% |
+| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +37.2% (P3, P1–P4 valid); rdflib S2 +44.7%, S3 +32.5%; P5 pending DB cleanup |
 
 ---
 
