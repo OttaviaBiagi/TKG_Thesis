@@ -275,8 +275,7 @@ with TR project controller).
 | Scale | Events | Test violations | Purpose |
 |---|---|---|---|
 | Single project | 29,150 | 8 (0.18%) | Primary — real TR Meram topology |
-| Multi (×100 same-topology) | 2,915,000 | 43,472 | Scalability — stabilise AUPRC estimates |
-| Multi-varied (×30 varied) | 559,877 | 8,276 (201 in test) | Generalisation — different step topologies |
+| Multi-varied (×30 varied) | 559,877 | 201 in test (0.24%) | Generalisation robustness — 30 structurally distinct EPC topologies |
 
 ---
 
@@ -400,7 +399,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | 8 | Label validation | ✅ 5 empirical sanity tests T1–T5 (all PASS) |
 | 9 | Reproducibility | ✅ Fixed seed=42; multi-seed via `--seeds 42 43 44` |
 | 10 | Multi-project generalisation | ✅ TGAT ×300±31 (multi_varied, 3 seeds); architectural hierarchy confirmed |
-| 11 | Expert label validation | ⏳ Phase B — requires TR HSE records |
+| 11 | Expert label validation | ⏳ Future work — requires TR HSE records |
 | 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (AUC=0.773±0.010 single; ×85±47 multi_varied) |
 | 13 | OWL-2 ontology + SPARQL (SO1) | ✅ epc_tkg.ttl (OWL-2 DL); Q1–Q7 verified; 6,217 triples; Module 3 EVM |
 | 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +29.7% (5 pairs); rdflib S2 +44.7%, S3 +32.5% |
