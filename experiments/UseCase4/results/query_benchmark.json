@@ -17,11 +17,11 @@
       "cypher": "\n            MATCH (w:Worker)-[:HAS_CERT]->(c:Certification)\n            RETURN w.id AS worker, c.id AS cert\n        ",
       "params": {},
       "metrics": {
-        "mean_ms": 3.658,
-        "std_ms": 1.196,
-        "median_ms": 3.321,
-        "min_ms": 2.072,
-        "max_ms": 8.837,
+        "mean_ms": 1.921,
+        "std_ms": 0.482,
+        "median_ms": 1.776,
+        "min_ms": 1.555,
+        "max_ms": 4.362,
         "rows": 144,
         "n_runs": 100,
         "warmup": 10
@@ -37,11 +37,11 @@
         "check_date": "2024-07-01T00:00:00+00:00"
       },
       "metrics": {
-        "mean_ms": 3.699,
-        "std_ms": 1.989,
-        "median_ms": 3.248,
-        "min_ms": 1.894,
-        "max_ms": 19.262,
+        "mean_ms": 2.102,
+        "std_ms": 1.185,
+        "median_ms": 1.827,
+        "min_ms": 1.554,
+        "max_ms": 12.427,
         "rows": 140,
         "n_runs": 100,
         "warmup": 10
@@ -55,11 +55,11 @@
       "cypher": "\n            MATCH (w:Worker)-[:HAS_CERT]->(c:Certification)\n                  <-[:REQUIRES_CERT]-(wp:WorkPermit)\n                  <-[:REQUIRES_PERMIT]-(s:Step)\n            RETURN w.id AS worker, wp.id AS permit, c.id AS cert, count(s) AS steps\n        ",
       "params": {},
       "metrics": {
-        "mean_ms": 21.888,
-        "std_ms": 2.346,
-        "median_ms": 21.491,
-        "min_ms": 18.957,
-        "max_ms": 34.804,
+        "mean_ms": 17.982,
+        "std_ms": 1.315,
+        "median_ms": 17.635,
+        "min_ms": 16.214,
+        "max_ms": 22.166,
         "rows": 128,
         "n_runs": 100,
         "warmup": 10
@@ -75,11 +75,11 @@
         "check_date": "2024-07-01T00:00:00+00:00"
       },
       "metrics": {
-        "mean_ms": 28.399,
-        "std_ms": 2.679,
-        "median_ms": 27.64,
-        "min_ms": 25.118,
-        "max_ms": 42.521,
+        "mean_ms": 25.836,
+        "std_ms": 1.9,
+        "median_ms": 25.34,
+        "min_ms": 23.449,
+        "max_ms": 32.843,
         "rows": 124,
         "n_runs": 100,
         "warmup": 10
@@ -93,11 +93,11 @@
       "cypher": "\n            MATCH (wp:WorkPermit {id:'hot_work'})-[:REQUIRES_CERT]->(req:Certification)\n            WITH collect(req.id) AS required\n            MATCH (w:Worker)\n            WITH w, required,\n                 [(w)-[:HAS_CERT]->(c:Certification) | c.id] AS held\n            WHERE ANY(r IN required WHERE NOT r IN held)\n            RETURN w.id AS worker, w.name AS name\n        ",
       "params": {},
       "metrics": {
-        "mean_ms": 1.916,
-        "std_ms": 0.876,
-        "median_ms": 1.644,
-        "min_ms": 1.047,
-        "max_ms": 6.934,
+        "mean_ms": 1.02,
+        "std_ms": 0.497,
+        "median_ms": 0.884,
+        "min_ms": 0.655,
+        "max_ms": 3.607,
         "rows": 45,
         "n_runs": 100,
         "warmup": 10
@@ -113,12 +113,50 @@
         "check_date": "2024-07-01T00:00:00+00:00"
       },
       "metrics": {
-        "mean_ms": 1.931,
-        "std_ms": 1.036,
-        "median_ms": 1.707,
-        "min_ms": 0.979,
-        "max_ms": 7.506,
+        "mean_ms": 0.978,
+        "std_ms": 0.33,
+        "median_ms": 0.894,
+        "min_ms": 0.76,
+        "max_ms": 2.938,
         "rows": 45,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QA5": {
+      "id": "QA5",
+      "label": "4-hop assignment chain \u2014 atemporal",
+      "pair": "P5",
+      "temporal": false,
+      "cypher": "\n            MATCH (w:Worker)-[:ASSIGNED_TO]->(s:Step)\n                  -[:REQUIRES_PERMIT]->(wp:WorkPermit)\n                  -[:REQUIRES_CERT]->(c:Certification)\n            RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert\n        ",
+      "params": {},
+      "metrics": {
+        "mean_ms": 3.241,
+        "std_ms": 0.803,
+        "median_ms": 2.978,
+        "min_ms": 2.608,
+        "max_ms": 7.652,
+        "rows": 220,
+        "n_runs": 100,
+        "warmup": 10
+      }
+    },
+    "QT5": {
+      "id": "QT5",
+      "label": "4-hop assignment chain \u2014 valid-time filter",
+      "pair": "P5",
+      "temporal": true,
+      "cypher": "\n            MATCH (w:Worker)-[a:ASSIGNED_TO]->(s:Step)\n                  -[:REQUIRES_PERMIT]->(wp:WorkPermit)\n                  -[r:REQUIRES_CERT]->(c:Certification)\n            WHERE a.valid_from <= $check_date\n              AND (a.valid_to  IS NULL OR a.valid_to  >= $check_date)\n              AND r.valid_from <= $check_date\n              AND (r.valid_to  IS NULL OR r.valid_to  >= $check_date)\n            RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert\n        ",
+      "params": {
+        "check_date": "2025-07-01T00:00:00+00:00"
+      },
+      "metrics": {
+        "mean_ms": 3.254,
+        "std_ms": 0.644,
+        "median_ms": 3.058,
+        "min_ms": 2.679,
+        "max_ms": 6.171,
+        "rows": 220,
         "n_runs": 100,
         "warmup": 10
       }
@@ -133,11 +171,11 @@
         "valid_date": "2024-06-01T00:00:00+00:00"
       },
       "metrics": {
-        "mean_ms": 3.075,
-        "std_ms": 1.002,
-        "median_ms": 2.702,
-        "min_ms": 2.118,
-        "max_ms": 7.87,
+        "mean_ms": 2.196,
+        "std_ms": 0.577,
+        "median_ms": 2.032,
+        "min_ms": 1.816,
+        "max_ms": 6.791,
         "rows": 141,
         "n_runs": 100,
         "warmup": 10
@@ -154,11 +192,11 @@
         "tx_snap": "2026-06-01T00:00:00+00:00"
       },
       "metrics": {
-        "mean_ms": 3.382,
-        "std_ms": 0.957,
-        "median_ms": 3.117,
-        "min_ms": 2.214,
-        "max_ms": 6.647,
+        "mean_ms": 2.353,
+        "std_ms": 0.623,
+        "median_ms": 2.142,
+        "min_ms": 1.899,
+        "max_ms": 5.288,
         "rows": 141,
         "n_runs": 100,
         "warmup": 10
@@ -171,9 +209,9 @@
       "desc": "1-hop cert lookup",
       "base_id": "QA1",
       "temp_id": "QT1",
-      "base_ms": 3.658,
-      "temp_ms": 3.699,
-      "overhead_pct": 1.1,
+      "base_ms": 1.921,
+      "temp_ms": 2.102,
+      "overhead_pct": 9.4,
       "h3_pass": true
     },
     {
@@ -181,9 +219,9 @@
       "desc": "3-hop compliance chain",
       "base_id": "QA2",
       "temp_id": "QT2",
-      "base_ms": 21.888,
-      "temp_ms": 28.399,
-      "overhead_pct": 29.7,
+      "base_ms": 17.982,
+      "temp_ms": 25.836,
+      "overhead_pct": 43.7,
       "h3_pass": true
     },
     {
@@ -191,9 +229,9 @@
       "desc": "Non-compliance detection",
       "base_id": "QA3",
       "temp_id": "QT3",
-      "base_ms": 1.916,
-      "temp_ms": 1.931,
-      "overhead_pct": 0.8,
+      "base_ms": 1.02,
+      "temp_ms": 0.978,
+      "overhead_pct": -4.1,
       "h3_pass": true
     },
     {
@@ -201,9 +239,19 @@
       "desc": "Single-axis vs bitemporal as-of",
       "base_id": "QT4_single",
       "temp_id": "QT4_bitemporal",
-      "base_ms": 3.075,
-      "temp_ms": 3.382,
-      "overhead_pct": 10.0,
+      "base_ms": 2.196,
+      "temp_ms": 2.353,
+      "overhead_pct": 7.1,
+      "h3_pass": true
+    },
+    {
+      "pair": "P5",
+      "desc": "4-hop assignment chain (ASSIGNED_TO)",
+      "base_id": "QA5",
+      "temp_id": "QT5",
+      "base_ms": 3.241,
+      "temp_ms": 3.254,
+      "overhead_pct": 0.4,
       "h3_pass": true
     }
   ]
