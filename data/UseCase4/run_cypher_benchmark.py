@@ -29,7 +29,7 @@ from neo4j import GraphDatabase
 # ── Config ────────────────────────────────────────────────────────────────────
 NEO4J_URI      = "bolt://localhost:7687"
 NEO4J_USER     = "neo4j"
-NEO4J_PASSWORD = "your_password"        # <-- set before running
+NEO4J_PASSWORD = "your_password"
 
 N_RUNS  = 100    # timed repetitions per query
 WARMUP  = 10     # discarded warmup runs
