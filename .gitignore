@@ -211,12 +211,15 @@ data/raw/
 *.csv
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/worktrees/
+tmp_*.py
 models/checkpoints/
 *.pt
 *.pth
 data/UseCase2/3w_dataset/
 
 data/UseCase4/Family_Steps_macro.xlsm
+data/UseCase4/family_steps/
 
 data/UseCase4/epc_dataset_real.json
 data/UseCase4/projects/

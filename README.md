@@ -28,7 +28,7 @@ compared to approaches that do not employ graph-based temporal modelling.
 |---|---|---|
 | **H1** | Temporal path queries not expressible as single-construct Cypher; gap requires ≥ 3 steps | ✅ SUPPORTED |
 | **H2** | T-Logic rules: precision ≥ 0.60, recall ≥ 0.70 | ✅ SUPPORTED — P=R=1.0 (confidence 1.0) |
-| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +37.2% (Neo4j P3); P5 pending DB cleanup |
+| **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +29.7% (Neo4j P2, P1–P4 valid); P5 excluded (QT5 returns 0 rows) |
 
 ---
 
@@ -211,15 +211,15 @@ contribution of the thesis.
 
 | Pair | Query | Atemporal | Temporal | Overhead | H3 |
 |---|---|---|---|---|---|
-| P1 | 1-hop cert lookup | 3.5 ms | 3.4 ms | −3.5% | ✅ PASS |
-| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 24.9 ms | 32.4 ms | +30.3% | ✅ PASS |
-| P3 | Non-compliance detection | 1.3 ms | 1.8 ms | +37.2% | ✅ PASS |
-| P4 | Bitemporal as-of (valid-time + tx-time) | 3.4 ms | 3.5 ms | +3.8% | ✅ PASS |
-| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 1,039.5 ms | 56.7 ms | −94.5%¹ | ⚠ pending |
+| P1 | 1-hop cert lookup | 3.7 ms | 3.7 ms | +1.1% | ✅ PASS |
+| P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 21.9 ms | 28.4 ms | +29.7% | ✅ PASS |
+| P3 | Non-compliance detection | 1.9 ms | 1.9 ms | +0.8% | ✅ PASS |
+| P4 | Bitemporal as-of (valid-time + tx-time) | 3.1 ms | 3.4 ms | +10.0% | ✅ PASS |
+| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | — | 0 rows | excluded¹ | ⚠ EXCLUDED |
 
-¹ P5 QT5 returns 0 rows due to database contamination from previous runs (~22k extra ASSIGNED_TO edges without temporal properties). Fix: `MATCH ()-[r:ASSIGNED_TO]->() WHERE r.valid_from IS NULL DELETE r` in Neo4j, then re-import and re-run benchmark. P1–P4 are unaffected.
+¹ P5 QT5 returns 0 rows despite ASSIGNED_TO edges carrying valid_from properties. The interaction between multiple independent temporal filters across a 4-hop chain (Worker→Step→Permit→Cert) suppresses all results; root cause unresolved. P5 is excluded from the H3 verdict; P1–P4 are unaffected.
 
-**H3 OVERALL: SUPPORTED (P1–P4).** Max measured overhead +37.2% on non-compliance detection (P3); all four valid pairs well below 50% threshold.
+**H3 OVERALL: SUPPORTED (P1–P4).** Max measured overhead +29.7% on the 3-hop compliance chain (P2); all four valid pairs well below 50% threshold.
 
 **rdflib SPARQL benchmark** (`ontology/run_query_benchmark.py`) — 200 runs, in-memory, 6,217 triples:
 
@@ -382,7 +382,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | 11 | Expert label validation | ⏳ Future work — requires TR HSE records |
 | 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (AUC=0.773±0.010 single; ×85±47 multi_varied) |
 | 13 | OWL-2 ontology + SPARQL (SO1) | ✅ epc_tkg.ttl (OWL-2 DL); Q1–Q7 verified; 6,217 triples; Module 3 EVM |
-| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +37.2% (P3, P1–P4 valid); rdflib S2 +44.7%, S3 +32.5%; P5 pending DB cleanup |
+| 14 | Temporal query overhead (SO4/H3) | ✅ H3 SUPPORTED — Neo4j max +29.7% (P2, P1–P4 valid); rdflib S2 +44.7%, S3 +32.5%; P5 excluded (QT5 returns 0 rows) |
 
 ---
 
