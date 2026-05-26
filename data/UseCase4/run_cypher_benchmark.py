@@ -168,7 +168,7 @@ QUERIES = [
               AND (r.valid_to  IS NULL OR r.valid_to  >= $check_date)
             RETURN w.id AS worker, s.id AS step, wp.id AS permit, c.id AS cert
         """,
-        "params": {"check_date": DATE_END},
+        "params": {"check_date": DATE_POST},
     },
 
     # ── Pair 4: Bitemporal as-of (valid-time + tx-time axes) ───────────────────

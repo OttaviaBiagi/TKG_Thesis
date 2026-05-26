@@ -163,7 +163,7 @@ def load(session, dataset):
             continue
         for step in hot_steps_post[:5]:
             vf = step.get('valid_from') or RULE_CHANGE_ISO
-            vt = step.get('valid_to') or None  # NULL = ongoing (no end date)
+            vt = None  # synthetic assignments are ongoing — valid_to always NULL
             assign_rows.append({
                 'wid':        w['id'],
                 'sid':        step['id'],
