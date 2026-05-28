@@ -166,6 +166,20 @@ the causal mechanism (critical-path precedence) is fully known a priori.
 
 ### Violation Detection Benchmark (notebook 08)
 
+**Prediction task:** Binary edge classification on ASSIGNED_TO events.
+Given a `(worker, step, timestamp)` triple, predict whether the assignment results
+in a `PERMIT_DENIED` compliance violation (label = 1) or not (label = 0).
+Input: 6 edge features (`FEAT_COLS`). Class imbalance: 0.18% single-project, 0.24% multi_varied.
+
+**What each model type learns:**
+
+| Type | What it uses | What it learns |
+|---|---|---|
+| Temporal GNN (TGN, TGAT, DyRep) | Graph structure + event timestamps + temporal neighbourhoods | Sequential patterns in ASSIGNED_TO history — e.g. worker repeatedly assigned without cert |
+| Structure-only GNN (StaticGNN) | Graph topology only, no timestamps | Which workers/steps are structurally at risk, ignoring when |
+| KG embedding (ComplEx, TNTComplEx) | Entity/relation co-occurrence (TNT adds time embedding) | Whether a `(worker, ASSIGNED_TO, step)` triple is plausible — a link prediction task, not violation classification |
+| Feature-only ML (LR, RF) | 6 edge features directly, no graph | Correlation between features (e.g. `after_rc`, `cert_expires_soon`) and violation label |
+
 7 models evaluated on 4 splits across 3 dataset scales. Primary metric: AUPRC (class imbalance 0.18–0.24%).
 
 **Edge features (`FEAT_COLS`):** `permit_enc · disc_enc · after_rc · on_critical_path · weight_pct · cert_expires_soon`
@@ -211,6 +225,16 @@ Temporal split · 201 test violations / 83,982 events · seeds 42, 43, 44.
 | TGN | 0.983 ± 0.000 | 0.127 ± 0.001 | ×53 |
 | ComplEx | 0.521 | 0.002 | ×1.0 |
 | TNTComplEx | 0.516 | 0.002 | ×1.0 |
+
+**Operational summary — what works and when:**
+
+| Model | Works for | Reason |
+|---|---|---|
+| **TGN** | Single-project violation detection | Temporal memory captures worker cert history; recall=1.0 catches all 8 test violations |
+| **TGAT** | Cross-project generalisation | Temporal attention adapts to unseen topologies; ×300±31 on multi_varied |
+| **Random Forest** | Fast feature-only baseline | Strong AUC=0.978 but recall=0.125 — finds easy cases, misses rare violations |
+| **KG embeddings** | Nothing — near-random | Wrong task: optimised for link prediction, not edge classification |
+| **DyRep** | Nothing — degenerate | Threshold collapses near zero; flags almost everything (precision=0.002) |
 
 **Architectural hierarchy confirmed across 3 seeds on 201 violations:**
 
