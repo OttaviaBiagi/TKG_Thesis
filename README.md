@@ -14,14 +14,14 @@
 ## Research Framework
 
 **Objective.** Investigate whether a TKG system designed for the EPC domain produces measurable
-improvements in temporal query expressiveness, causal traceability, and delay risk prediction
-compared to approaches that do not employ graph-based temporal modelling.
+improvements in temporal query expressiveness, causal violation auditability, and delay cascade
+characterization compared to approaches that do not employ graph-based temporal modelling.
 
 | Sub-objective | Scope | Chapter |
 |---|---|---|
 | SO1 — Architecture | Hybrid TKG: OWL-2 ontological layer + Neo4j bitemporal property graph | 3–4 |
 | SO2 — Query expressiveness | Expressiveness gap: standard Cypher vs Allen interval algebra patterns | 4.4 |
-| SO3 — Causal rule extraction | T-Logic rules for delay propagation + compliance violation detection | 4.8 |
+| SO3 — Causal rule extraction | T-Logic rules for delay cascade characterization + compliance violation auditability | 4.8 |
 | SO4 — Operational feasibility | Query overhead: temporal vs atemporal queries at EPC scale | 5 |
 
 | Hypothesis | Claim | Verdict |
@@ -113,7 +113,7 @@ EVM properties: `epc:plannedValue · epc:earnedValue · epc:progressPct · epc:S
 
 ---
 
-## SO3 / RQ2 / H2 — Causal Rule Extraction + Violation Detection (Chapter 4.5–4.8, 5)
+## SO3 / RQ2 / H2 — Causal Rule Extraction + Violation Auditability (Chapter 4.5–4.8, 5)
 
 ### T-Logic Symbolic Rules (notebook 07)
 
@@ -127,17 +127,40 @@ Three compliance rules specified as domain-driven T-Logic patterns (confidence =
 
 **Note on rule origin:** R1 and R2 are manually specified domain rules, not mined by TLogic's random walk algorithm. This is a principled design choice: the compliance discriminant is negation-based (`¬HAS_CERT`) and TLogic's positive-pattern walk mining cannot recover negation signals. Section 12 of notebook 07 validates this by running the actual walk sampler and demonstrating it cannot rediscover R1 — confirming that domain-expert specification is the correct approach for this class of compliance problem.
 
-**Results on single-project test set (post rule-change split):**
+**Results on single-project test set (post rule-change split, 20,040 events, 274 violations):**
 
-| Model | P | R | F1 |
-|---|---|---|---|
-| R1 (missing cert) | 1.000 | 1.000 | **1.000** |
-| R2 (post-RC hot_work only) | 1.000 | 0.073 | 0.137 |
-| R1+R2 combined | 1.000 | 1.000 | **1.000** |
+| Model | P | R | F1 | Note |
+|---|---|---|---|---|
+| R1 (missing cert) | 1.000 | 1.000 | **1.000** | Deterministic domain rule |
+| R2 (post-RC hot_work only) | 1.000 | 0.073 | 0.137 | Subset of R1 violations |
+| R1+R2 combined | 1.000 | 1.000 | **1.000** | Evaluated on post-RC split; neural models use temporal 70/15/15 with 8 test violations — different protocols, not directly comparable |
 
 **H2 verdict:** P=R=F1=1.0 — well above thresholds (P≥0.60, R≥0.70). **H2 SUPPORTED.**
 
-**R3 Cascade:** 449 direct permit denials → **1,037 downstream steps at risk** via `PRECEDES` transitive closure across 3 depth levels. Operational impact quantified by discipline (hours-at-risk) in notebook 07 Section 13.
+### Violation Auditability (causal traceability)
+
+The TKG provides complete causal auditability for all detected violations:
+
+| Metric | Value | Source |
+|---|---|---|
+| Traceability completeness | **449/449 (100%)** violations traceable to specific missing cert via R1 | notebook 07 §5 |
+| Causal chain depth | **4 hops** — Worker → ASSIGNED_TO → Step → REQUIRES_PERMIT → WorkPermit → REQUIRES_CERT → Certification | SPARQL Q6 |
+| Violations materialised | **180 ComplianceViolation triples** constructed via Q6 SPARQL CONSTRUCT | `Q6_violation_inference.sparql` |
+| Bitemporal audit trail | **7 versioned states** per compliance rule with valid-time + tx-time | SPARQL Q4 |
+
+### Delay Cascade Characterization (R3)
+
+R3 models how upstream permit denials propagate downstream through the `PRECEDES` dependency graph.
+This is a structural analysis (deterministic graph traversal), not a learned prediction —
+the causal mechanism (critical-path precedence) is fully known a priori.
+
+| Metric | Value |
+|---|---|
+| Direct violations (R1+R2) | 449 |
+| Downstream steps at cascade risk | **1,037** (depth 1–3 via PRECEDES transitive closure) |
+| Cascade amplification factor | **2.3× steps** per direct violation |
+| Project-wide exposure | **73% of all 1,419 steps** reachable from at least one violation |
+| Operational impact | Quantified by discipline (hours-at-risk) — notebook 07 §13 |
 
 ---
 
@@ -215,7 +238,9 @@ contribution of the thesis.
 | P2 | 3-hop compliance chain (Step→Permit→Cert→Worker) | 18.0 ms | 25.8 ms | +43.7% | ✅ PASS |
 | P3 | Non-compliance detection | 1.0 ms | 1.0 ms | −4.1% | ✅ PASS |
 | P4 | Bitemporal as-of (valid-time + tx-time) | 2.2 ms | 2.4 ms | +7.1% | ✅ PASS |
-| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 3.2 ms | 3.3 ms | +0.4% | ✅ PASS |
+| P5 | 4-hop ASSIGNED_TO chain (Worker→Step→Permit→Cert) | 3.2 ms | 3.3 ms | +0.4% | ✅ PASS | † |
+
+† P5 uses `check_date = 2025-07-01` (project end) rather than `DATE_POST = 2024-07-01`. ASSIGNED_TO edges have `valid_to = NULL` (ongoing), so only `valid_from ≤ check_date` filters; using project-end ensures QT5 returns the same 220 rows as QA5 for a fair overhead comparison.
 
 **H3 OVERALL: SUPPORTED (P1–P5).** Max measured overhead +43.7% on the 3-hop compliance chain (P2); all five pairs well below 50% threshold.
 
@@ -271,13 +296,15 @@ TKG_Thesis/
 │   └── queries/                        # Cypher: temporal compliance, critical path
 │
 ├── notebooks/UseCase4/
-│   ├── 01_explore_epc.ipynb            # Dataset exploration + Neo4j verification
-│   ├── 02_temporal_queries.ipynb       # Bitemporal Cypher (SO2/RQ1) — 4 query classes
-│   ├── 03_critical_path.ipynb          # Critical path & bottleneck analysis
-│   ├── 04_dynamic_tkg.ipynb            # Event stream analysis
-│   ├── 06_tkg_models.ipynb             # TNTComplEx + RF/XGBoost baselines
-│   ├── 07_tlogic_symbolic_reasoning.ipynb  # T-Logic rules + cascade + walk mining (SO3/RQ2)
-│   └── 08_model_benchmark_final.ipynb  # [MAIN] Full benchmark: all models × all splits
+│   ├── 01_explore_epc.ipynb               # Dataset exploration + Neo4j verification
+│   ├── 02_temporal_queries.ipynb          # Bitemporal Cypher (SO2/RQ1) — 4 query classes
+│   ├── 03_critical_path_analysis.ipynb    # Critical path & bottleneck analysis
+│   ├── 04_event_stream_analysis.ipynb     # Event stream analysis + feature engineering
+│   ├── 05_tgn_epc.ipynb                   # Early TGN prototype (exploratory)
+│   ├── 06_tkg_model_development.ipynb     # TNTComplEx + RF/XGBoost baselines
+│   ├── 07_tlogic_symbolic_reasoning.ipynb # T-Logic rules + cascade + walk mining (SO3/RQ2)
+│   ├── 08_model_benchmark_final.ipynb     # [MAIN] Full benchmark: all models × all splits
+│   └── 09_tkg_visualization.ipynb         # TKG graph visualisation
 │
 ├── experiments/UseCase4/
 │   ├── eval_framework.py               # split_dataset · compute_metrics · find_best_threshold
@@ -345,7 +372,7 @@ jupyter lab   # open notebooks/UseCase4/02_temporal_queries.ipynb
 ### SO3 / RQ2 — T-Logic + Violation Detection
 ```bash
 # T-Logic rules + cascade risk
-jupyter lab   # open notebooks/UseCase4/07_four_layer_tlogic.ipynb
+jupyter lab   # open notebooks/UseCase4/07_tlogic_symbolic_reasoning.ipynb
 
 # Full benchmark: all models × splits × seeds
 python experiments/UseCase4/run_benchmark.py --dataset single --seeds 42 43 44
@@ -384,7 +411,23 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 
 ---
 
-## References
+## Future Work
+
+| Priority | Item | Rationale |
+|---|---|---|
+| **Phase B — Data** | Expert validation with TR HSE records (checklist item 11) | Compliance layer is synthetic; real permit-denial logs would validate R1/R2 rules and retrain neural models on actual violations |
+| **Phase B — Data** | Extend to multi-project federation with shared ontology | Current `multi_varied` uses 30 independent projects; a shared TKG across concurrent TR projects enables cross-project compliance queries |
+| **Modelling** | EvolveGCN-O as DTDG baseline | §2.3.5 positions EvolveGCN as the discrete-time counterpart to TGN/TGAT; adding it closes the CTDG vs DTDG comparison gap with daily snapshots |
+| **Modelling** | Hybrid symbolic-neural ensemble (Experiment H) | T-Logic R1+R2 (recall=1.0) + TGN-B (precision=1.0) complement each other; notebook 07 §10 outlines the design; needs formal benchmark |
+| **Modelling** | Inductive learning across permit types | Current inductive split withholds worker nodes; extending to unseen permit types tests whether temporal patterns generalise to new regulatory contexts |
+| **Query layer** | Native T-GQL / GQL implementation | Current Allen-algebra approximations require multi-step Cypher; ISO GQL (standardised 2024) or a T-GQL layer would make Class 3 simultaneous-validity queries first-class |
+| **Compliance** | Continuous / streaming compliance monitoring | Current system runs batch queries; a streaming layer (Neo4j CDC or Kafka) would enable real-time permit-denial alerts as ASSIGNED_TO events arrive |
+| **Compliance** | Cert expiry forecasting | `cert_expires_soon` is a binary feature; a time-to-expiry regression model on HAS_CERT `valid_to` dates would enable proactive compliance management |
+| **Evaluation** | Delay cascade validation | R3 cascade risk scores have not been validated against actual project delay data; if TR PCS provides schedule-actual data, cascade predictions can be evaluated against observed delays |
+
+---
+
+
 
 - Rossi et al. (2020) — Temporal Graph Networks (TGN) · NeurIPS
 - Xu et al. (2020) — Inductive Representation Learning on Temporal Graphs (TGAT) · ICLR
