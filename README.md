@@ -294,7 +294,7 @@ S1 artefact is expected: rdflib has no property index; the Neo4j equivalent (P1)
 | Bitemporal rule-change Jun 2024 | Demonstration scenario | ❌ Synthetic |
 
 The project activity and step structure is real TR Meram data. The compliance layer is synthetic
-due to the unavailability of real HSE personnel records (Phase B objective: expert validation
+due to the unavailability of real HSE personnel records (future work: expert validation
 with TR project controller).
 
 ### Evaluation Scales
@@ -439,8 +439,8 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 
 | Priority | Item | Rationale |
 |---|---|---|
-| **Phase B — Data** | Expert validation with TR HSE records (checklist item 11) | Compliance layer is synthetic; real permit-denial logs would validate R1/R2 rules and retrain neural models on actual violations |
-| **Phase B — Data** | Extend to multi-project federation with shared ontology | Current `multi_varied` uses 30 independent projects; a shared TKG across concurrent TR projects enables cross-project compliance queries |
+| **Data** | Expert validation with TR HSE records (checklist item 11) | Compliance layer is synthetic; real permit-denial logs would validate R1/R2 rules and retrain neural models on actual violations |
+| **Data** | Extend to multi-project federation with shared ontology | Current `multi_varied` uses 30 independent projects; a shared TKG across concurrent TR projects enables cross-project compliance queries |
 | **Modelling** | EvolveGCN-O as DTDG baseline | §2.3.5 positions EvolveGCN as the discrete-time counterpart to TGN/TGAT; adding it closes the CTDG vs DTDG comparison gap with daily snapshots |
 | **Modelling** | Hybrid symbolic-neural ensemble (Experiment H) | T-Logic R1+R2 (recall=1.0) + TGN-B (precision=1.0) complement each other; notebook 07 §10 outlines the design; needs formal benchmark |
 | **Modelling** | Inductive learning across permit types | Current inductive split withholds worker nodes; extending to unseen permit types tests whether temporal patterns generalise to new regulatory contexts |
