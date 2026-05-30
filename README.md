@@ -27,7 +27,7 @@ characterization compared to approaches that do not employ graph-based temporal 
 | Hypothesis | Claim | Verdict |
 |---|---|---|
 | **H1** | Temporal path queries not expressible as single-construct Cypher; gap requires ≥ 3 steps | ✅ SUPPORTED |
-| **H2** | T-Logic rules: precision ≥ 0.60, recall ≥ 0.70 | ✅ SUPPORTED — P=R=1.0 (confidence 1.0) |
+| **H2** | T-Logic rules: precision ≥ 0.60, recall ≥ 0.70 | ✅ SUPPORTED — P=R=1.0 single project; P=0.963 R=0.991 F1=0.977 multi_varied (313 FP = manual overrides) |
 | **H3** | Temporal query overhead < 50% relative to atemporal equivalents | ✅ SUPPORTED — max +43.7% (Neo4j P2); all P1–P5 PASS |
 
 ---
@@ -135,7 +135,26 @@ Three compliance rules specified as domain-driven T-Logic patterns (confidence =
 | R2 (post-RC hot_work only) | 1.000 | 0.073 | 0.137 | Subset of R1 violations |
 | R1+R2 combined | 1.000 | 1.000 | **1.000** | Evaluated on post-RC split; neural models use temporal 70/15/15 with 8 test violations — different protocols, not directly comparable |
 
-**H2 verdict:** P=R=F1=1.0 — well above thresholds (P≥0.60, R≥0.70). **H2 SUPPORTED.**
+**H2 verdict:** P=R=F1=1.0 on single project — well above thresholds (P≥0.60, R≥0.70). **H2 SUPPORTED.**
+
+**Cross-project generalisation (§15 notebook 07):** T-Logic R1 evaluated on `multi_varied` dataset using `tlogic_all_datasets.json`:
+
+| Model | Dataset | P | R | F1 | Note |
+|---|---|---|---|---|---|
+| T-Logic R1 | single | 1.000 | 0.991 | 0.996 | 0 FP — closed single-project environment |
+| T-Logic R1 | multi_varied | **0.963** | **0.991** | **0.977** | 313 FP = manual manager overrides across projects |
+| T-Logic R1+R2 | multi_varied | 0.942 | 0.999 | 0.970 | adds post-rule-change hot_work requirement |
+
+R1 generalises without retraining: the compliance framework (cert requirements) is identical across all projects. The 313 false positives are cases where a worker lacked a required cert at assignment time but no PERMIT_DENIED was recorded — attributable to manager discretionary approvals.
+
+**§14 fair comparison — same task + same test split (nb08 temporal split, 8 violations / 4,373 test events):**
+
+| Model | AUC | P | R | F1 | Note |
+|---|---|---|---|---|---|
+| T-Logic R1 (no training) | — | 1.000 | 1.000 | **1.000** | Exact rule = performance ceiling |
+| TGN seed=42 (nb08) | 0.985 | 0.044 | 1.000 | 0.084 | All 8 violations caught; 165 false alerts |
+
+T-Logic R1 is the performance ceiling because it encodes the exact rule that generates the labels. TGN learns inductively and achieves AUC=0.985 (strong discrimination) but low precision under class imbalance (8/4373=0.18%).
 
 ### Violation Auditability (causal traceability)
 
@@ -214,17 +233,18 @@ Temporal 70/15/15 split · 8 test violations / 4,373 events · threshold optimis
 is noise at 8 violations. AUC=0.759–0.784 confirms weak structural signal. Reliable StaticGNN result: multi_varied.  
 ‡ DyRep recall=1.0 is degenerate: threshold collapses near zero, flagging almost all events (precision=0.002).
 
-#### Cross-project generalisation — multi_varied (30 diverse EPC families)
+#### Cross-project generalisation — multi_varied (diverse EPC families)
 
-Temporal split · 201 test violations / 83,982 events · seeds 42, 43, 44.
+Temporal split · 201 test violations / 83,982 events · seeds 42, 43, 44 · lift vs test base rate (0.24%).
 
-| Model | AUC (3 seeds) | AUPRC (3 seeds) | Lift (mean) |
-|---|---|---|---|
-| **TGAT** | **0.979 ± 0.025** | **0.717 ± 0.073** | **×300 ± 31** |
-| StaticGNN (d=2) | 0.932 ± 0.004 | 0.204 ± 0.112 | ×85 ± 47 |
-| TGN | 0.983 ± 0.000 | 0.127 ± 0.001 | ×53 |
-| ComplEx | 0.521 | 0.002 | ×1.0 |
-| TNTComplEx | 0.516 | 0.002 | ×1.0 |
+| Model | AUC (3 seeds) | AUPRC (3 seeds) | Lift (mean) | Note |
+|---|---|---|---|---|
+| T-Logic R1 (no training) | — | — | F1=**0.977** | P=0.963 R=0.991; full-dataset eval, no train/test split |
+| **TGAT** | **0.979 ± 0.025** | **0.717 ± 0.073** | **×300 ± 31** | — |
+| StaticGNN (d=2) | 0.932 ± 0.004 | 0.204 ± 0.112 | ×85 ± 47 | — |
+| TGN | 0.983 ± 0.000 | 0.127 ± 0.001 | ×53 | — |
+| ComplEx | 0.521 | 0.002 | ×1.0 | — |
+| TNTComplEx | 0.516 | 0.002 | ×1.0 | — |
 
 **Operational summary — what works and when:**
 
@@ -427,7 +447,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | 7 | Temporal drift analysis | ✅ 6-slot split — per-time-window metrics |
 | 8 | Label validation | ✅ 5 empirical sanity tests T1–T5 (all PASS) |
 | 9 | Reproducibility | ✅ Fixed seed=42; multi-seed via `--seeds 42 43 44` |
-| 10 | Multi-project generalisation | ✅ TGAT ×300±31 (multi_varied, 3 seeds); architectural hierarchy confirmed |
+| 10 | Multi-project generalisation | ✅ T-Logic R1 F1=0.977 (no training); TGAT ×300±31 AUPRC (multi_varied, 3 seeds); architectural hierarchy confirmed |
 | 11 | Expert label validation | ⏳ Future work — requires TR HSE records |
 | 12 | Static KG baselines | ✅ ComplEx + TNTComplEx (random at all scales); StaticGNN (AUC=0.773±0.010 single; ×85±47 multi_varied) |
 | 13 | OWL-2 ontology + SPARQL (SO1) | ✅ epc_tkg.ttl (OWL-2 DL); Q1–Q7 verified; 6,217 triples; Module 3 EVM |
@@ -440,7 +460,7 @@ python data/UseCase4/run_cypher_benchmark.py      # Neo4j benchmark (100 runs, r
 | Priority | Item | Rationale |
 |---|---|---|
 | **Data** | Expert validation with TR HSE records (checklist item 11) | Compliance layer is synthetic; real permit-denial logs would validate R1/R2 rules and retrain neural models on actual violations |
-| **Data** | Extend to multi-project federation with shared ontology | Current `multi_varied` uses 30 independent projects; a shared TKG across concurrent TR projects enables cross-project compliance queries |
+| **Data** | Extend to multi-project federation with shared ontology | Current `multi_varied` uses independent projects; a shared TKG across concurrent TR projects enables cross-project compliance queries |
 | **Modelling** | EvolveGCN-O as DTDG baseline | §2.3.5 positions EvolveGCN as the discrete-time counterpart to TGN/TGAT; adding it closes the CTDG vs DTDG comparison gap with daily snapshots |
 | **Modelling** | Hybrid symbolic-neural ensemble (Experiment H) | T-Logic R1+R2 (recall=1.0) + TGN-B (precision=1.0) complement each other; notebook 07 §10 outlines the design; needs formal benchmark |
 | **Modelling** | Inductive learning across permit types | Current inductive split withholds worker nodes; extending to unseen permit types tests whether temporal patterns generalise to new regulatory contexts |
