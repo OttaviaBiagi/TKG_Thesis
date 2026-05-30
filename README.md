@@ -172,6 +172,9 @@ The TKG provides complete causal auditability for all detected violations:
 R3 models how upstream permit denials propagate downstream through the `PRECEDES` dependency graph.
 This is a structural analysis (deterministic graph traversal), not a learned prediction —
 the causal mechanism (critical-path precedence) is fully known a priori.
+Risk score: `risk(step at depth d) = 0.5^d` (geometric decay). Hours-at-risk = estimated_hours × risk_score.
+
+**Single project (notebook 07 §13):**
 
 | Metric | Value |
 |---|---|
@@ -179,7 +182,19 @@ the causal mechanism (critical-path precedence) is fully known a priori.
 | Downstream steps at cascade risk | **1,037** (depth 1–3 via PRECEDES transitive closure) |
 | Cascade amplification factor | **2.3× steps** per direct violation |
 | Project-wide exposure | **73% of all 1,419 steps** reachable from at least one violation |
-| Operational impact | Quantified by discipline (hours-at-risk) — notebook 07 §13 |
+| Hours-at-risk | ~517,000 h (weighted by risk score × estimated hours per step) |
+
+**Cross-project generalisation — multi_varied (notebook 07 §15.3, 100 projects):**
+
+| Metric | Multi-varied mean | Range |
+|---|---|---|
+| Violations per project | 435 | 390–481 |
+| Cascade steps per project | 1,001 | 886–1,120 |
+| **Amplification factor** | **2.30× ± 0.04** | 2.19–2.37 |
+| Hours-at-risk per project | 573,380 h | — |
+| Total hours-at-risk (100 projects) | **57,338,044 h** | — |
+
+**Key finding:** The 2.30× cascade amplification is structurally stable across all project topologies (std=0.04). EPC project DAGs consistently produce ~2.3× downstream step exposure per direct violation — R3 generalises without re-calibration, confirming it is a structural property of EPC scheduling rather than a single-project artefact.
 
 ---
 
