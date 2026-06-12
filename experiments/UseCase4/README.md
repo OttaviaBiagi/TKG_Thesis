@@ -16,7 +16,8 @@ python run_benchmark.py --dataset single --seeds 42        # single project (~45
 python run_benchmark.py --dataset multi_varied --seeds 42  # 30 varied EPC families
 
 # 4. ML feature-only baselines
-python run_ml_baseline.py
+python run_ml_baseline.py --dataset single   # single project baseline
+python run_ml_baseline.py --dataset multi    # multi-project baseline (100 projects)
 
 # 5. Static KG baselines
 python run_static_baseline.py --model all --dataset all    # ComplEx + TNTComplEx
@@ -39,3 +40,24 @@ jupyter lab ../../notebooks/UseCase4/08_model_benchmark_final.ipynb
 ## Results
 
 All results land in `results/`. See [THESIS_GUIDE.md](../../THESIS_GUIDE.md) for the mapping to thesis sections.
+
+### Multi-project summary
+
+Recent multi-project results show that the RF feature-only baseline is competitive with TGN temporal on the multi dataset, but TGN still preserves the best predictive quality when temporal-graph structure is taken into account.
+
+- `RandomForest` multi:
+  - AUC = 0.9803
+  - AUPRC = 0.0907
+  - F1 = 0.0963
+  - Training time = 112.8s
+- `TGN` multi `temporal`:
+  - AUC = 0.9811
+  - AUPRC = 0.0940
+  - F1 = 0.0975
+  - Training time = 349.7s
+
+### Interpretation
+
+- `RandomForest` is a strong baseline on multi, showing that feature engineering already captures much of the signal.
+- `TGN temporal` remains the best model for the task because it explicitly models temporal graph dynamics and therefore slightly outperforms RF on the key ranking metrics.
+

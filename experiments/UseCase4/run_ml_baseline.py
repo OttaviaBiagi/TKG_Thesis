@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).parent))
 
-from data_loader import load_single_project, FEAT_COLS
+from data_loader import load_single_project, load_multi_project, FEAT_COLS
 from eval_framework import split_dataset, find_best_threshold, compute_metrics
 
 RESULTS_DIR = Path(__file__).parent / 'results'
@@ -38,7 +39,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 SEED = 42
 
 
-def run_baseline(model_name: str, clf, df: pd.DataFrame) -> dict:
+def run_baseline(model_name: str, clf, df: pd.DataFrame, dataset: str) -> dict:
     train_df, val_df, test_df = split_dataset(
         df, method='temporal', label_col='label', time_col='tau')
 
@@ -73,7 +74,7 @@ def run_baseline(model_name: str, clf, df: pd.DataFrame) -> dict:
     return {
         'model':        model_name,
         'split':        'temporal',
-        'dataset':      'single',
+        'dataset':      dataset,
         'type':         'ml_baseline',
         'train_sec':    round(train_sec, 2),
         'n_train':      len(train_df),
@@ -87,7 +88,7 @@ def run_baseline(model_name: str, clf, df: pd.DataFrame) -> dict:
     }
 
 
-def run(data_dir: str = 'data/UseCase4'):
+def run(data_dir: str = 'data/UseCase4', dataset: str = 'single'):
     print('ML Baseline Runner')
     print(f'  Split: temporal 70/15/15  (same as TGN benchmark)')
     print(f'  Features: {FEAT_COLS}')
@@ -95,7 +96,12 @@ def run(data_dir: str = 'data/UseCase4'):
     print()
 
     np.random.seed(SEED)
-    df = load_single_project(data_dir)
+    if dataset == 'single':
+        df = load_single_project(data_dir)
+    elif dataset == 'multi':
+        df = load_multi_project(data_dir)
+    else:
+        raise ValueError(f"Unknown dataset: {dataset}")
 
     models = [
         ('LogisticRegression',
@@ -108,7 +114,7 @@ def run(data_dir: str = 'data/UseCase4'):
 
     results = []
     for name, clf in models:
-        r = run_baseline(name, clf, df)
+        r = run_baseline(name, clf, df, dataset)
         results.append(r)
 
     print()
@@ -134,4 +140,9 @@ def run(data_dir: str = 'data/UseCase4'):
 
 
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser(description='Run ML baselines (LR, RF)')
+    parser.add_argument('--data-dir', default='data/UseCase4', help='Path to data dir')
+    parser.add_argument('--dataset', choices=['single', 'multi'], default='single',
+                        help='Dataset to load: single or multi')
+    args = parser.parse_args()
+    run(data_dir=args.data_dir, dataset=args.dataset)
