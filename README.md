@@ -258,6 +258,8 @@ Temporal split · 201 test violations / 83,982 events · seeds 42, 43, 44 · lif
 | **TGAT** | **0.979 ± 0.025** | **0.717 ± 0.073** | **×300 ± 31** | — |
 | StaticGNN (d=2) | 0.932 ± 0.004 | 0.204 ± 0.112 | ×85 ± 47 | — |
 | TGN | 0.983 ± 0.000 | 0.127 ± 0.001 | ×53 | — |
+| Random Forest | 0.983 | 0.104 | ×43 | Feature-only ML; seed=42 |
+| Logistic Regression | 0.685 | 0.069 | ×28 | Feature-only ML; seed=42 |
 | ComplEx | 0.521 | 0.002 | ×1.0 | — |
 | TNTComplEx | 0.516 | 0.002 | ×1.0 | — |
 
