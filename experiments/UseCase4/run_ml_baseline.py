@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(Path(__file__).parent))
 
-from data_loader import load_single_project, load_multi_project, FEAT_COLS
+from data_loader import load_single_project, load_multi_project, load_multi_varied, FEAT_COLS
 from eval_framework import split_dataset, find_best_threshold, compute_metrics
 
 RESULTS_DIR = Path(__file__).parent / 'results'
@@ -100,6 +100,8 @@ def run(data_dir: str = 'data/UseCase4', dataset: str = 'single'):
         df = load_single_project(data_dir)
     elif dataset == 'multi':
         df = load_multi_project(data_dir)
+    elif dataset == 'multi_varied':
+        df = load_multi_varied(data_dir)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")
 
@@ -133,8 +135,17 @@ def run(data_dir: str = 'data/UseCase4', dataset: str = 'single'):
               f"x{r['lift']:>5.1f}  {r['f1']:>6.3f}")
 
     out = RESULTS_DIR / 'ml_baseline.json'
+    existing = []
+    if out.exists():
+        try:
+            existing = json.load(open(out))['results']
+        except Exception:
+            existing = []
+    # Replace entries for this dataset, keep others
+    kept = [r for r in existing if r.get('dataset') != dataset]
+    merged = {'results': kept + results}
     with open(out, 'w') as f:
-        json.dump({'results': results}, f, indent=2)
+        json.dump(merged, f, indent=2)
     print(f'\nSaved -> {out}')
     return results
 
@@ -142,7 +153,7 @@ def run(data_dir: str = 'data/UseCase4', dataset: str = 'single'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run ML baselines (LR, RF)')
     parser.add_argument('--data-dir', default='data/UseCase4', help='Path to data dir')
-    parser.add_argument('--dataset', choices=['single', 'multi'], default='single',
-                        help='Dataset to load: single or multi')
+    parser.add_argument('--dataset', choices=['single', 'multi', 'multi_varied'], default='single',
+                        help='Dataset to load: single, multi, or multi_varied')
     args = parser.parse_args()
     run(data_dir=args.data_dir, dataset=args.dataset)

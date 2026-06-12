@@ -60,7 +60,9 @@ All results land in `results/`. See [THESIS_GUIDE.md](../../THESIS_GUIDE.md) for
 | StaticGNN | single | temporal | 0.773±0.013 | 0.546±0.066 | 0.385±0.259 | 0.693±0.503 | 0.417±0.265 | 298x | 2.0 |
 | StaticGNN | multi\_varied | temporal | 0.932±0.003 | 0.204±0.115 | 0.132±0.073 | 0.089±0.067 | 0.426±0.107 | 85x | 241.6 |
 | RandomForest | multi | temporal | 0.980 | 0.091 | 0.096 | 0.051 | **1.000** | 43x | 112.8 |
+| RandomForest | multi\_varied | temporal | 0.983 | 0.104 | 0.115 | — | — | 43x | 7.5 |
 | LogisticRegression | multi | temporal | 0.688 | 0.068 | 0.102 | 0.057 | 0.489 | 32x | 11.3 |
+| LogisticRegression | multi\_varied | temporal | 0.685 | 0.069 | 0.047 | — | — | 28x | 0.3 |
 | TNTComplEx | single | temporal | 0.582 | 0.003 | 0.004 | — | — | 1.6x | — |
 | TNTComplEx | multi | temporal | 0.507 | 0.002 | 0.004 | — | — | 1.0x | — |
 | TNTComplEx | multi\_varied | temporal | 0.516 | 0.002 | 0.005 | — | — | 1.0x | — |
@@ -112,14 +114,16 @@ Note: T-Logic R1 achieves perfect F1=1.0 on multi_varied (all 3 seeds), making t
 
 StaticGNN is strong on single (AUPRC up to 0.63) but degrades significantly on multi_varied (high seed variance), showing that ignoring temporal ordering hurts generalisation.
 
-#### ML feature-only baselines — multi, 100 projects
+#### ML feature-only baselines
 
-| Model | AUC | AUPRC | F1 | Recall | AUPRC Lift | Train (s) |
+| Model | Dataset | AUC | AUPRC | F1 | AUPRC Lift | Train (s) |
 |---|---|---|---|---|---|---|
-| RandomForest | **0.980** | **0.091** | 0.096 | **1.000** | **43x** | 112.8 |
-| LogisticRegression | 0.688 | 0.068 | **0.102** | 0.489 | 32x | 11.3 |
+| RandomForest | multi (100 proj) | **0.980** | 0.091 | 0.096 | **43x** | 112.8 |
+| RandomForest | multi\_varied (30 families) | **0.983** | **0.104** | **0.115** | **43x** | 7.5 |
+| LogisticRegression | multi (100 proj) | 0.688 | 0.068 | 0.102 | 32x | 11.3 |
+| LogisticRegression | multi\_varied (30 families) | 0.685 | 0.069 | 0.047 | 28x | 0.3 |
 
-RF recall=1.0 is a threshold artifact (threshold=0.645 sweeps all positives). AUPRC is a more reliable metric: RF is 43x above the random baseline.
+RF is consistent across both multi datasets (AUC ~0.98, AUPRC lift ~43x). LR AUC ~0.69 confirms it cannot model non-linear interactions in the feature space.
 
 #### Static KG baselines (ComplEx, TNTComplEx)
 
